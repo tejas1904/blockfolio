@@ -1,0 +1,32 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>user landing page</title>
+        <script src="https://cdn.jsdelivr.net/npm/ethers@5.2.0/dist/ethers.umd.min.js"></script>
+    </head>
+    <body>
+        <button id="conect_button"> connect</button> <span id="connectionstatus">wallet not connected!</span>
+        <br><br>
+        <button id="create_wallet_button">create your portfolio!</button>
+        <br><br>
+        <label for="company">Buy Stock:</label>
+        <select id="stockCompany">
+            <option value="nvidia">nvidia</option>
+            <option value="tesla">tesla</option>
+            <option value="microsoft">microsoft</option>
+            <option value="apple">apple</option>
+            <option value="google">google</option>
+        </select>
+
+        <input type="number" id="stockQuantity" placeholder="Enter quantity of the stock">
+        <button id="buy_stock_btn">Buy Stock</button>
+        <br><br>
+
+        <button id="get_updated_portfolio_btn">get updated portfolio</button>
+        <button id="clear_cookies_btn">clear cookies!!</button>
+        <br><br>
+        <ul id="portfolio_list"></ul>
+        <script type="module" src="userPageScript.js"></script>
+    </body>
+</html>
