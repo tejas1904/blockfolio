@@ -48,14 +48,14 @@ class WalletManager {
 
     }
 
-    saveUserData() {
-        const userData = {
-            hasMinted: this.hasMinted,
-            userAddress: this.userAddress
-        };
-        document.cookie = `portfolioData=${JSON.stringify(userData)}; expires=${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toUTCString()}; path=/`;
-        console.log("User data saved to cookies:", userData);
-    }
+    // saveUserData() {
+    //     const userData = {
+    //         hasMinted: this.hasMinted,
+    //         userAddress: this.userAddress
+    //     };
+    //     document.cookie = `portfolioData=${JSON.stringify(userData)}; expires=${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toUTCString()}; path=/`;
+    //     console.log("User data saved to cookies:", userData);
+    // }
 
     loadUserData() {
         const cookies = document.cookie.split(';');
@@ -118,7 +118,23 @@ class WalletManager {
 
             this.walletConnected = true;
             this.userAddress = await this.signer.getAddress();
-            this.saveUserData();
+            try{
+                const val = await this.portfolioContract._ownedToken(await wm.signer.getAddress());
+                if (val.toString() != "0"){
+                    this.hasMinted = true;
+                    console.log("User has a portfolio already:", this.hasMinted);
+                    console.log("token id:", val.toString());
+                }
+                else{
+                    this.hasMinted = false;
+                    console.log("User does not have a portfolio:", this.hasMinted);
+                }
+            }
+            catch(error){
+                this.hasMinted = false;
+                console.log("User does not have a portfolio:", this.hasMinted);
+            }
+            // this.saveUserData();
             console.log("Connected to MetaMask and contract successfully.");
 
 

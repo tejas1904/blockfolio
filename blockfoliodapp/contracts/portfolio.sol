@@ -143,6 +143,10 @@ contract portfolio is ERC721{
     constructor(){
         tokenCount = 0;
     }
+
+    function getStockListingsLength(address stockAddress) public view returns (uint256) {
+    return _stocksForSale[stockAddress].length;
+    }
     
 
     function mint() external {
