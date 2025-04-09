@@ -24,6 +24,11 @@ class WalletManager {
         this.stockContractABI = null;
         this.stockContracAbiLocation = "stock.json";
 
+        this.yodaContractAddress = "0xB4f02d437373b4F1aE411b4f95b4d505D9e46559";
+        this.yodaContractABI = null;
+        this.yodaContractAbiLocation = "YODA.json";
+        this.yodaContract = null;
+
         // user-related data
         this.userAddress = null;
         this.hasMinted = false;
@@ -97,12 +102,26 @@ class WalletManager {
             console.error("Failed to load stock ABI:", error);
             throw error;
         }
+        try {
+            const response = await fetch(this.yodaContractAbiLocation);
+            const data = await response.json();
+            this.yodaContractABI = data.abi;
+            console.log("yoda ABI loaded successfully.",this.stockContractABI);
+            
+        } catch (error) {
+            console.error("Failed to load yoda ABI:", error);
+            throw error;
+        }
+
     }
 
     async connectMetaMaskAndContract() {
         try {
             // Ensure ABI is loaded
             if (!this.portfolioContractABI) {
+                await this.loadABI();
+            }
+            if(!this.yodaContractABI){
                 await this.loadABI();
             }
 
@@ -116,6 +135,12 @@ class WalletManager {
                 this.signer
             );
 
+            this.yodaContract = new ethers.Contract(
+                this.yodaContractAddress,
+                this.yodaContractABI,
+                this.signer
+            );
+
             this.walletConnected = true;
             this.userAddress = await this.signer.getAddress();
             try{
@@ -123,7 +148,7 @@ class WalletManager {
                 if (val.toString() != "0"){
                     this.hasMinted = true;
                     console.log("User has a portfolio already:", this.hasMinted);
-                    console.log("token id:", val.toString());
+                    console.log("with a token id:", val.toString());
                 }
                 else{
                     this.hasMinted = false;

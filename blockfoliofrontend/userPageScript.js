@@ -10,6 +10,8 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("get_updated_portfolio_btn").addEventListener("click", getUpdatedPortfolio);
     // document.getElementById("clear_cookies_btn").addEventListener("click", clearCookie);
     document.getElementById("get_updated_market_btn").addEventListener("click", getUpdatedMarketListings);
+    document.getElementById("list_token_button").addEventListener("click", listTokenForSale);
+    document.getElementById("buy_token_button").addEventListener("click", buyToken);
     portfolioHtmlListElement = document.getElementById("portfolio_list");
     marketHtmlListElement = document.getElementById("market_list");
     
@@ -19,6 +21,17 @@ function clearCookie() {
     // Set the cookie to expire in the past
     document.cookie = "portfolioData=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/";
     console.log("User data cleared from cookies.");
+}
+
+function setVisibilityOfDivs(){
+    if (wm.hasMinted){
+        document.getElementById("sell_token_div").style.visibility= "visible";
+        document.getElementById("buy_token_div").style.visibility= "hidden";
+    }
+    else{
+        document.getElementById("sell_token_div").style.visibility= "hidden";
+        document.getElementById("buy_token_div").style.visibility= "visible";
+    }
 }
 
 async function checkConditions() {
@@ -37,28 +50,47 @@ async function connectMetaMaskAndContract() {
     await wm.connectMetaMaskAndContract();
     let textbox = document.getElementById("connectionstatus");
     textbox.textContent = `Connected! to account: ${await wm.signer.getAddress()}`;
+
+    if (wm.hasMinted == true) {
+        let textbox = document.getElementById("tokenid");
+        const tokenId = await wm.portfolioContract._ownedToken(await wm.signer.getAddress());
+        textbox.textContent = tokenId.toString();
+        setVisibilityOfDivs();
+    }
 }
 async function createWallet() {
     if (!wm.walletConnected) {
-        alert("Please connect your wallet (metamask) first.");
+        alert("Please connect your wallet (MetaMask) first.");
         return false;
     }
-    console.log("the status of the wallet is:", wm.hasMinted);
+
+    console.log("The status of the wallet is:", wm.hasMinted);
+
     if (!wm.hasMinted) {
-        const tx = await wm.portfolioContract.mint();
-        console.log("Transaction sent:", tx);
-        tx.wait().then((receipt) => {
+        try {
+            const tx = await wm.portfolioContract.mint();
+            console.log("Transaction sent:", tx);
+            
+            const receipt = await tx.wait();
             console.log("Transaction mined in block:", receipt.blockNumber);
+            
             alert("Wallet created successfully!");
             wm.hasMinted = true;
-            // wm.saveUserData();
-        }).catch(error => {
+
+            let textbox = document.getElementById("tokenid");
+            const tokenId = await wm.portfolioContract._ownedToken(await wm.signer.getAddress());
+            textbox.textContent = tokenId.toString();
+        } catch (error) {
             console.error("Transaction failed:", error);
-        });
+        }
+    } else {
+        alert("Portfolio already created!");
+
+        let textbox = document.getElementById("tokenid");
+        const tokenId = await wm.portfolioContract._ownedToken(await wm.signer.getAddress());
+        textbox.textContent = tokenId.toString();
     }
-    else{
-        alert("portfolio already created!");
-    }
+    setVisibilityOfDivs();
 }
 
 async function getPrice(address, count) {
@@ -237,4 +269,87 @@ async function getUpdatedMarketListings() {
             console.error(`Error fetching listings for ${key}:`, error);
         }
     }
+}
+
+async function listTokenForSale() {
+    const tokenId = await wm.portfolioContract._ownedToken(await wm.signer.getAddress());
+
+    // approve the portfolio as the seller in the sotck contracts in the tokenId
+    const addresses = await wm.portfolioContract.getTokenStockAddresses(tokenId);
+    console.log("addresses of the stocks in the portfolio:", addresses);
+    for (let i = 0; i < addresses.length; i++) {
+        const stockFtAddress = addresses[i];
+        const stockContract = new ethers.Contract(stockFtAddress,wm.stockContractABI,wm.signer);
+        const balance = await stockContract.balanceOf(await wm.signer.getAddress());
+        if (!balance.isZero())
+            {
+                try{
+                    const tx = await stockContract.approve(wm.portfolioContractAddress, balance);
+                    const receipt = await tx.wait(); // wait for transaction to be mined
+
+                    console.log(`The portfolio contract is approved to transfer ${balance.toString()} stock(s).`);
+                }
+                catch(error){
+                    console.error("Error in setting the allowance in the stock contract:", error);
+                    alert(error.data.message);
+                    return;
+                }
+            }
+    }
+
+    const tx = await wm.portfolioContract.listPortfolioToSell();
+    const receipt = await tx.wait();
+}
+
+async function buyToken() {
+    if (!wm.walletConnected) {
+        alert("Please connect your wallet (metamask) first.");
+        return ;
+    }
+    const tokenIdToBuy = document.getElementById("buy_token_number_inp").value;
+    
+    //calculate the toal price of the tokenId
+    let totalPrice = ethers.BigNumber.from(0);
+    const addresses = await wm.portfolioContract.getTokenStockAddresses(tokenIdToBuy);
+    console.log("addresses of the stocks in the portfolio:", addresses);
+    for (let i = 0; i < addresses.length; i++) {
+        const stockFtAddress = addresses[i];
+        const stockContract = new ethers.Contract(stockFtAddress,wm.stockContractABI,wm.signer);
+        const portfolioOwnerAddress = await wm.portfolioContract._listedPortfolioOwner(tokenIdToBuy);
+        const balance = await stockContract.balanceOf(portfolioOwnerAddress);
+        const unit_price = await wm.portfolioContract.getAPrice(stockFtAddress);
+        console.log("unit price of the stock:", unit_price.toString());
+        console.log("quantity of stock owned:", balance.toString());
+        totalPrice = totalPrice.add(unit_price.mul(balance));
+    }
+    console.log("total value of the tokenId:", totalPrice.toString());
+
+    try {
+        const tx = await wm.portfolioContract.buyPortfolio(tokenIdToBuy,{value:totalPrice});
+        const receipt = await tx.wait();
+        console.log("Transaction mined in block:", receipt.blockNumber);
+        alert("Portfolio bought successfully!");
+        
+    } catch (error) {
+        console.error("Error :", error);
+
+        let errorMessage = "Transaction failed.";
+        
+        if (error.reason) {
+            errorMessage = error.reason;  // Extract reason if available
+        } else if (error.data && error.data.message) {
+            errorMessage = error.data.message;  // Some providers put the message here
+        }
+
+        alert(errorMessage);
+        return;
+    }
+
+    const tokenId = await wm.portfolioContract._ownedToken(await wm.signer.getAddress());
+    wm.hasMinted = true;
+    let textbox = document.getElementById("tokenid");
+    textbox.textContent = tokenId.toString();
+    setVisibilityOfDivs();
+    await getUpdatedPortfolio();
+
 }

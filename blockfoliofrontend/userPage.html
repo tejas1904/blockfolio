@@ -8,7 +8,7 @@
     <body>
         <button id="conect_button"> connect</button> <span id="connectionstatus">wallet not connected!</span>
         <br><br>
-        <button id="create_wallet_button">create your portfolio!</button>
+        <button id="create_wallet_button">create your portfolio!</button> TokenId:<span id="tokenid">none</span>
         <br><br>
         <label for="company">Stock:</label>
         <select id="stockCompany">
@@ -31,6 +31,14 @@
         <br><br>
         <button id="get_updated_market_btn">get updated market listings</button>
         <ul id="market_list"></ul>
+        <br><br>
+        <br><br>
+        <div id="sell_token_div" style="visibility: hidden;">
+        <button id="list_token_button"> list my token foe sale </button>
+        </div>
+        <div id="buy_token_div" style="visibility: visible;">
+        TokenToBuy: <input type="number" id="buy_token_number_inp" placeholder="Enter TokenID"> <button id="buy_token_button"> buy </button>
+        </div>
         <script type="module" src="userPageScript.js"></script>
     </body>
 </html>

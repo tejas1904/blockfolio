@@ -145,6 +145,89 @@ contract portfolio is ERC721{
     // User address -> stock address -> number of stock alreay listed for sale
     mapping(address => mapping(address => uint256)) public _userListedStocks;
 
+    //---stuff for selling of porfolios---
+    // Mapping from portfolio token ID to its listing
+    mapping(uint256 => bool) public _isPortfolioForSale;
+    // Mapping of tokenId -> array of addresses
+    mapping(uint256 => address[]) public _tokenStockAddresses;
+    //mapping of a tokenId->address of owner
+    mapping(uint256 => address)public _listedPortfolioOwner;
+
+    function getTokenStockAddresses(uint256 tokenId) public view returns (address[] memory) {
+        require(_tokenStockAddresses[tokenId].length > 0, "No stocks found for this token ID");
+        return _tokenStockAddresses[tokenId];
+    }
+
+    function listPortfolioToSell() public {
+        uint256 token_id = _ownedToken[msg.sender];
+        require(_ownerOf[token_id] == msg.sender, "you are not the owner of this portfolio!");
+        require(_isPortfolioForSale[token_id] == false, "your portfolio has already been listed for sale");
+        
+        // List the portfolio for sale
+        _isPortfolioForSale[token_id] = true;
+        _listedPortfolioOwner[token_id] = msg.sender;
+    }
+
+    function buyPortfolio(uint256 token_id) public payable {
+        require(_isPortfolioForSale[token_id], "the portfolio hasn't been listed for sale yet");
+        address portfolioOwnerAddress = _listedPortfolioOwner[token_id];
+        require(portfolioOwnerAddress != address(0), "Invalid portfolio owner");
+        require(portfolioOwnerAddress != msg.sender, "You cannot buy your own portfolio");
+
+        // Calculate the total value of all stocks in the portfolio
+        uint256 totalPortfolioValue = 0;
+        for (uint256 i = 0; i < _tokenStockAddresses[token_id].length; i++) {
+            address stockAddress = _tokenStockAddresses[token_id][i];
+            if (_tokenHasStock[token_id][stockAddress]) {
+                uint256 stockBalance = IERC20(stockAddress).balanceOf(portfolioOwnerAddress);
+                uint256 stockPrice = getAPrice(stockAddress);
+                totalPortfolioValue += stockPrice*stockBalance;
+            }
+        }
+    
+
+        require(msg.value >= totalPortfolioValue, "Insufficient payment");
+        
+        // Transfer all stocks in the portfolio
+        for (uint256 i = 0; i < _tokenStockAddresses[token_id].length; i++) {
+            address stockAddress = _tokenStockAddresses[token_id][i];
+            if (_tokenHasStock[token_id][stockAddress]) {
+                uint256 balanceOfStock = IERC20(stockAddress).balanceOf(portfolioOwnerAddress);
+                if (balanceOfStock > 0) {
+                    IERC20(stockAddress).transferFrom(portfolioOwnerAddress, msg.sender, balanceOfStock);
+                }
+            }
+        }
+
+        // Transfer the ERC721 portfolio token
+
+        myTransferFrom(portfolioOwnerAddress, msg.sender, token_id);
+        
+        // Update ownership records
+        _ownedToken[msg.sender] = token_id;
+        _ownedToken[portfolioOwnerAddress] = 0 ;
+        delete _ownedToken[portfolioOwnerAddress];
+        
+        // Clean up listings
+        _isPortfolioForSale[token_id] = false;
+        delete _listedPortfolioOwner[token_id];
+        
+        // Forward payment to seller
+        payable(portfolioOwnerAddress).transfer(msg.value);
+        
+    }
+    function myTransferFrom(address from, address to, uint256 id) public {
+        require(from == _ownerOf[id], "from != owner");
+        require(to != address(0), "transfer to zero address");
+
+        _balanceOf[from]--;
+        _balanceOf[to]++;
+        _ownerOf[id] = to;
+
+        emit Transfer(from, to, id);
+    }
+
+
     constructor(){
         tokenCount = 0;
     }
@@ -179,7 +262,10 @@ contract portfolio is ERC721{
         uint256 balance = IERC20(address(stockFtAddress)).balanceOf(msg.sender);
         require(balance>0,"you dont own any stock in this company !!");
 
-        _tokenHasStock[token_Id][stockFtAddress] = true;
+        if (_tokenHasStock[token_Id][stockFtAddress] != true){
+            _tokenHasStock[token_Id][stockFtAddress] = true;
+            _tokenStockAddresses[token_Id].push(stockFtAddress);
+        }
         return balance;
 
     }
@@ -228,6 +314,13 @@ contract portfolio is ERC721{
         uint256 price  = 100;
 
         return price*count;
+    }
+
+    function getAPrice(address stockFtAddress)public pure   returns (uint256){
+        //now ferch the price form the orcle and multiply it with the cout
+        require(stockFtAddress != address(0), "you sent zero address!");
+        uint256 price  = 100;
+        return price;
     }
 
 

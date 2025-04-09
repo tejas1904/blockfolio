@@ -7,6 +7,29 @@ async function main() {
     if (signers.length < 19) {
         throw new Error("Not enough signers available! Ensure you have at least 19 signers.");
     }
+    // deploy a contract called yoda which has a constructor witch takes in supply
+    const deployer = signers[12];
+    console.log(`Deploying Yoda contract with address: ${deployer.address}`);
+    const Yoda = await hre.ethers.getContractFactory("YODA");
+    const initialSupply = 10000000;
+    const yodaContract = await Yoda.connect(deployer).deploy('YODA Token', 'YODA', initialSupply);
+    await yodaContract.waitForDeployment();
+    const yodaAddress = await yodaContract.getAddress();
+    console.log(`Yoda contract deployed to: ${yodaAddress}`);
+    for (let i = 0; i < 10; i++) {
+        const signerAddress = signers[i].address;
+        
+        // Authorize the signer for first transfer
+        console.log(`Authorizing ${signerAddress} for first transfer`);
+        const authorizeTx = await yodaContract.connect(deployer).authorizeFirstTransfer(signerAddress);
+        await authorizeTx.wait();
+        
+        // Send 10,000 tokens to the signer
+        console.log(`Sending 10,000 YODA tokens to ${signerAddress}`);
+        const sendTx = await yodaContract.connect(signers[i]).sendMeFunds();
+        await sendTx.wait();
+    }
+
 
     // Deploy the Portfolio contract
     const deployer14 = signers[13];
