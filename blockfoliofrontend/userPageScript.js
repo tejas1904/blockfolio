@@ -158,18 +158,24 @@ async function listStockForSale(){
     const stockFtAddress = wm.stockNameToAddress[stockName.toString()];
     const count = document.getElementById("stockQuantity").value;
 
-    //first check if the user has the stock
+    //first check if the user has the stock and also if user has enough stock and if hes 
     try {
         const tokenId = await wm.portfolioContract._ownedToken(await wm.signer.getAddress());
         const stockContract = new ethers.Contract(stockFtAddress,wm.stockContractABI,wm.signer);
-        const quantity = await stockContract.balanceOf(await wm.signer.getAddress());
-        console.log("quantity of stock owned:", quantity.toString());
-        if (quantity.toString() == "0"){
+        const balance  = await stockContract.balanceOf(await wm.signer.getAddress());
+        console.log("quantity of stock owned:", balance.toString());
+        if (balance.isZero()) { 
             alert("You do not own any stock of this company.");
             return;
         }
-        if (quantity.toString() < count){
-            alert("You do not own enough stock of this company as what your tring to list.");
+        if (balance.lt(count)) { 
+            alert("You do not own enough stock of this company as what you're trying to list.");
+            return;
+        }
+        const alreadyListed = await wm.portfolioContract._userListedStocks(await wm.signer.getAddress(), stockFtAddress);
+        console.log("already listed + count:", alreadyListed.add(count).toString());
+        if (alreadyListed.add(count).gt(balance)) {
+            alert("Total amount you're trying to list exceeds your owned balance.");
             return;
         }
     } catch (error) {
@@ -215,21 +221,12 @@ async function getUpdatedMarketListings() {
     if (!await checkConditions()) {
         return;
     }
-    const tokenId = await wm.portfolioContract._ownedToken(await wm.signer.getAddress());
     
     marketHtmlListElement.innerHTML = "";
     for (let key in wm.stockNameToAddress) {
         const stockFtAddress = wm.stockNameToAddress[key];
         try {
-            let totalStockForSale = 0;
-            const listingsLength = await wm.portfolioContract.getStockListingsLength(stockFtAddress);
-            
-            if (listingsLength.toNumber() > 0) {
-                for (let i = 0; i < listingsLength.toNumber(); i++) {
-                    const listing = await wm.portfolioContract._stocksForSale(stockFtAddress, i);
-                    totalStockForSale += listing.count.toNumber();
-                }
-            }
+            const totalStockForSale = await wm.portfolioContract._totalSellCount(stockFtAddress);
             
             console.log(`Stock : ${key}, for Sale: ${totalStockForSale.toString()}`);
             let listItem = document.createElement("li");
@@ -241,6 +238,3 @@ async function getUpdatedMarketListings() {
         }
     }
 }
-
-
-

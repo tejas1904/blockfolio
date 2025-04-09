@@ -138,7 +138,12 @@ contract portfolio is ERC721{
     }
     //maping of a stockAddress to a listing
     mapping(address => StockListing[]) public _stocksForSale;
+
+    // mapping of a stockAddress to the total count of how many are listed to be sold
     mapping(address => uint256) public _totalSellCount;
+
+    // User address -> stock address -> number of stock alreay listed for sale
+    mapping(address => mapping(address => uint256)) public _userListedStocks;
 
     constructor(){
         tokenCount = 0;
@@ -195,6 +200,10 @@ contract portfolio is ERC721{
         uint256 balance = IERC20(address(stockFtAddress)).balanceOf(msg.sender);
         require(count<= balance,"you cant list more stock than you own in the company!!");
 
+        // Making sure the user doesn't list more than they own
+        uint256 alreadyListed = _userListedStocks[msg.sender][stockFtAddress];
+        require(alreadyListed + count <= balance, "Total listed amount would exceed owned balance");
+
         //check if the  owner of the stock has approved this contract as a spender
         uint256 authorized_count = IERC20(stockFtAddress).allowance(msg.sender,address(this));
         require(authorized_count >= count , "not enough stock is authorized to be sold");
@@ -202,6 +211,9 @@ contract portfolio is ERC721{
         //now list the stock for sale 
         _stocksForSale[stockFtAddress].push(StockListing(msg.sender, count));
         _totalSellCount[stockFtAddress] += count;
+
+        // Update the user's listed amount
+        _userListedStocks[msg.sender][stockFtAddress] += count;
 
     }
 
@@ -242,6 +254,7 @@ contract portfolio is ERC721{
                 IERC20(stockFtAddress).transferFrom(listing.seller, msg.sender, listing.count);
                 remainingToBuy -= listing.count;
                 _totalSellCount[stockFtAddress] -= listing.count;
+                _userListedStocks[listing.seller][stockFtAddress] -= listing.count;
                 
                 // Remove this listing
                 delistStockListing(stockFtAddress, i);
@@ -251,6 +264,7 @@ contract portfolio is ERC721{
                 IERC20(stockFtAddress).transferFrom(listing.seller, msg.sender, remainingToBuy);
                 listing.count -= remainingToBuy;
                 _totalSellCount[stockFtAddress] -= remainingToBuy;
+                _userListedStocks[listing.seller][stockFtAddress] -= remainingToBuy;
                 remainingToBuy = 0;
                 i++;
             }
@@ -265,8 +279,15 @@ contract portfolio is ERC721{
         }
     }
 
-    function delistStockListing(address stockFtAddress, uint256 listingIndex) public {
+    function delistStockListing(address stockFtAddress, uint256 listingIndex) private {
         require(listingIndex < _stocksForSale[stockFtAddress].length, "Invalid listing index");
+
+            
+        // Update the user's tracked listed amount
+        address seller = _stocksForSale[stockFtAddress][listingIndex].seller;
+        if (_userListedStocks[seller][stockFtAddress] ==0){
+            delete _userListedStocks[seller][stockFtAddress];
+        }
         
         // Remove the listing by replacing it with the last listing and then reducing the array length
         StockListing memory lastListing = _stocksForSale[stockFtAddress][_stocksForSale[stockFtAddress].length - 1];
