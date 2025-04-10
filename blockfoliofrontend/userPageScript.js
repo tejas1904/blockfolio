@@ -116,40 +116,62 @@ async function getPrice(address, count) {
 
 
 
-async function buyStock() {
-    if (!await checkConditions()) {
-        return;
-    }
-
-    const stockName = document.getElementById("stockCompany").value;
-    try {
-        let stockFtAddress = wm.stockNameToAddress[stockName.toString()];
-    }
-    catch (error) {
-        console.error("nvalid stock name or address not found.:", error);
-        alert("Invalid stock name or address not found.");
-        return;
-    }
-    const stockFtAddress = wm.stockNameToAddress[stockName.toString()];
-
-    const count = document.getElementById("stockQuantity").value;
+    async function buyStock() {
+        if (!await checkConditions()) {
+            return;
+        }
     
-    console.log("buying stock",stockName.toString()," with address:", stockFtAddress, "and count:", count);
-    const price = await getPrice(stockFtAddress,count);
-    console.log("price to buy is:", price.toString());
-
+        const stockName = document.getElementById("stockCompany").value;
+        try {
+            let stockFtAddress = wm.stockNameToAddress[stockName.toString()];
+        }
+        catch (error) {
+            console.error("Invalid stock name or address not found:", error);
+            alert("Invalid stock name or address not found.");
+            return;
+        }
+        const stockFtAddress = wm.stockNameToAddress[stockName.toString()];
     
-    const tx = await wm.portfolioContract.buy(stockFtAddress,count,{value:price});
-    console.log("Transaction sent:", tx);
-    try {
-        const receipt = await tx.wait();
-        console.log("Transaction mined in block:", receipt.blockNumber);
-        alert("Stock bought successfully!");
-        await getUpdatedPortfolio(); 
-    } catch (error) {
-        console.error("Transaction failed:", error);
+        const count = document.getElementById("stockQuantity").value;
+        
+        console.log("buying stock", stockName.toString(), " with address:", stockFtAddress, "and count:", count);
+        const price = await getPrice(stockFtAddress, count);
+        console.log("price to buy is:", price.toString());
+    
+        // First, we need to approve the portfolio contract to spend our payment tokens
+        try {
+            const yodaContract = new ethers.Contract(wm.yodaContractAddress, wm.yodaContractABI, wm.signer);
+            const tx = await yodaContract.approve(wm.portfolioContractAddress, price);
+            const receipt = await tx.wait(); // wait for transaction to be mined
+            console.log(`The portfolio contract is approved to transfer ${price.toString()} payment tokens`);
+        } catch (error) {
+            console.error("Error in approving payment token transfer:", error);
+            alert("Error in approving payment token transfer.");
+            return;
+        }
+        
+        // Then call the buy function (without sending ETH)
+        try {
+            const tx = await wm.portfolioContract.buy(stockFtAddress, count);
+            console.log("Transaction sent:", tx);
+            const receipt = await tx.wait();
+            console.log("Transaction mined in block:", receipt.blockNumber);
+            alert("Stock bought successfully!");
+            await getUpdatedPortfolio(); 
+        } catch (error) {
+            console.error("Transaction failed:", error);
+            
+            let errorMessage = "Transaction failed.";
+            if (error.reason) {
+                errorMessage = error.reason;
+            } else if (error.data && error.data.message) {
+                errorMessage = error.data.message;
+            }
+            
+            alert(errorMessage);
+        }
     }
-}
+    
 
 async function getUpdatedPortfolio() {
     if (!await checkConditions()) {
@@ -328,8 +350,8 @@ async function buyToken() {
     const tx = await yodaContract.approve(wm.portfolioContractAddress, totalPrice);
     const receipt = await tx.wait(); // wait for transaction to be mined
     console.log(`The portfolio contract is approved to transfer yoda of ${totalPrice.toString()}`);
-    const allowance = await yodaContract.allowance(await wm.signer.getAddress(), wm.portfolioContractAddress);
-    console.log("The allowance is:",allowance.toString());
+    // const allowance = await yodaContract.allowance(await wm.signer.getAddress(), wm.portfolioContractAddress);
+    // console.log("The allowance is:",allowance.toString());
 
     try {
 

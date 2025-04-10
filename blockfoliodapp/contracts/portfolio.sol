@@ -327,53 +327,63 @@ contract portfolio is ERC721{
     }
 
 
-    function buy(address stockFtAddress, uint256 count) public payable {
-        require(IERC20(stockFtAddress).totalSupply() > 0, "Invalid ERC-20 contract");
-        require(_totalSellCount[stockFtAddress] >= count, "Not enough stock available for sale");
+    function buy(address stockFtAddress, uint256 count) public {
+    require(IERC20(stockFtAddress).totalSupply() > 0, "Invalid ERC-20 contract");
+    require(_totalSellCount[stockFtAddress] >= count, "Not enough stock available for sale");
 
-        uint256 token_id = _ownedToken[msg.sender];
-        // Check if the portfolio (tokenID) is owned by the sender
-        require(_ownerOf[token_id] == msg.sender, "You are not the owner of this portfolio!");
+    uint256 token_id = _ownedToken[msg.sender];
+    // Check if the portfolio (tokenID) is owned by the sender
+    require(_ownerOf[token_id] == msg.sender, "You are not the owner of this portfolio!");
 
-        // Calculate total price
-        uint256 totalPrice = getPrice(stockFtAddress, count);
-        require(msg.value >= totalPrice, "Insufficient payment");
+    // Calculate total price
+    uint256 totalPrice = getPrice(stockFtAddress, count);
+    
+    // Check if buyer has authorized enough payment tokens
+    uint256 authorized_count = IERC20(_paymentTokenAddress).allowance(msg.sender, address(this));
+    require(authorized_count >= totalPrice, "Insufficient authorization");
 
-        uint256 remainingToBuy = count;
-        uint256 i = 0;
+    uint256 remainingToBuy = count;
+    uint256 i = 0;
 
-        while (i < _stocksForSale[stockFtAddress].length && remainingToBuy > 0) {
-            StockListing storage listing = _stocksForSale[stockFtAddress][i];
+    while (i < _stocksForSale[stockFtAddress].length && remainingToBuy > 0) {
+        StockListing storage listing = _stocksForSale[stockFtAddress][i];
 
-            if (remainingToBuy >= listing.count) {
-                // Buy entire listing
-                IERC20(stockFtAddress).transferFrom(listing.seller, msg.sender, listing.count);
-                remainingToBuy -= listing.count;
-                _totalSellCount[stockFtAddress] -= listing.count;
-                _userListedStocks[listing.seller][stockFtAddress] -= listing.count;
-                
-                // Remove this listing
-                delistStockListing(stockFtAddress, i);
-                // Note: delistStockListing will adjust the array, so don't increment i
-            } else {
-                // Partial buy
-                IERC20(stockFtAddress).transferFrom(listing.seller, msg.sender, remainingToBuy);
-                listing.count -= remainingToBuy;
-                _totalSellCount[stockFtAddress] -= remainingToBuy;
-                _userListedStocks[listing.seller][stockFtAddress] -= remainingToBuy;
-                remainingToBuy = 0;
-                i++;
-            }
-        }
-        updatePortfolio(stockFtAddress);
-
-
-        // refund any unfulfilled orders
-        uint256 unitPrice = totalPrice / count;
-        if (msg.value > unitPrice * remainingToBuy) {
-            payable(msg.sender).transfer(msg.value - (unitPrice * remainingToBuy));
+        if (remainingToBuy >= listing.count) {
+            // Buy entire listing
+            uint256 partialPrice = getAPrice(stockFtAddress) * listing.count;
+            
+            // Transfer stock from seller to buyer
+            IERC20(stockFtAddress).transferFrom(listing.seller, msg.sender, listing.count);
+            
+            // Transfer payment from buyer to seller
+            IERC20(_paymentTokenAddress).transferFrom(msg.sender, listing.seller, partialPrice);
+            
+            remainingToBuy -= listing.count;
+            _totalSellCount[stockFtAddress] -= listing.count;
+            _userListedStocks[listing.seller][stockFtAddress] -= listing.count;
+            
+            // Remove this listing
+            delistStockListing(stockFtAddress, i);
+            // Note: delistStockListing will adjust the array, so don't increment i
+        } else {
+            // Partial buy
+            uint256 partialPrice = getAPrice(stockFtAddress) * remainingToBuy;
+            
+            // Transfer stock from seller to buyer
+            IERC20(stockFtAddress).transferFrom(listing.seller, msg.sender, remainingToBuy);
+            
+            // Transfer payment from buyer to seller
+            IERC20(_paymentTokenAddress).transferFrom(msg.sender, listing.seller, partialPrice);
+            
+            listing.count -= remainingToBuy;
+            _totalSellCount[stockFtAddress] -= remainingToBuy;
+            _userListedStocks[listing.seller][stockFtAddress] -= remainingToBuy;
+            remainingToBuy = 0;
+            i++;
         }
     }
+    updatePortfolio(stockFtAddress);
+}
 
     function delistStockListing(address stockFtAddress, uint256 listingIndex) private {
         require(listingIndex < _stocksForSale[stockFtAddress].length, "Invalid listing index");
