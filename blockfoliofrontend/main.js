@@ -24,10 +24,9 @@ class WalletManager {
         this.stockContractABI = null;
         this.stockContracAbiLocation = "stock.json";
 
-        this.yodaContractAddress = "0xB4f02d437373b4F1aE411b4f95b4d505D9e46559";
+        this.yodaContractAddress = "0x6BdBb69660E6849b98e8C524d266a0005D3655F7";
         this.yodaContractABI = null;
         this.yodaContractAbiLocation = "YODA.json";
-        this.yodaContract = null;
 
         // user-related data
         this.userAddress = null;
@@ -132,12 +131,6 @@ class WalletManager {
             this.portfolioContract = new ethers.Contract(
                 this.portfolioContractAddress,
                 this.portfolioContractABI,
-                this.signer
-            );
-
-            this.yodaContract = new ethers.Contract(
-                this.yodaContractAddress,
-                this.yodaContractABI,
                 this.signer
             );
 

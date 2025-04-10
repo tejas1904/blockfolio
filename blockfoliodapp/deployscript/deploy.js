@@ -36,7 +36,7 @@ async function main() {
     console.log(`Deploying Portfolio contract with address: ${deployer14.address}`);
     
     const Portfolio = await hre.ethers.getContractFactory("portfolio");
-    const portfolioContract = await Portfolio.connect(deployer14).deploy();
+    const portfolioContract = await Portfolio.connect(deployer14).deploy(yodaAddress);
     await portfolioContract.waitForDeployment();
     
     const portfolioAddress = await portfolioContract.getAddress();

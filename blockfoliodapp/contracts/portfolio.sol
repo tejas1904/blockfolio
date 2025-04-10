@@ -131,6 +131,7 @@ contract portfolio is ERC721{
     // Mapping from owner to owned token ID
     mapping(address => uint256) public _ownedToken;
     
+    address _paymentTokenAddress;
 
     struct StockListing {
         address seller;
@@ -168,7 +169,7 @@ contract portfolio is ERC721{
         _listedPortfolioOwner[token_id] = msg.sender;
     }
 
-    function buyPortfolio(uint256 token_id) public payable {
+    function buyPortfolio(uint256 token_id) public {
         require(_isPortfolioForSale[token_id], "the portfolio hasn't been listed for sale yet");
         address portfolioOwnerAddress = _listedPortfolioOwner[token_id];
         require(portfolioOwnerAddress != address(0), "Invalid portfolio owner");
@@ -186,7 +187,8 @@ contract portfolio is ERC721{
         }
     
 
-        require(msg.value >= totalPortfolioValue, "Insufficient payment");
+        uint256 authorized_count = IERC20(_paymentTokenAddress).allowance(msg.sender,address(this));
+        require(authorized_count >= totalPortfolioValue, "Insufficient authorization");
         
         // Transfer all stocks in the portfolio
         for (uint256 i = 0; i < _tokenStockAddresses[token_id].length; i++) {
@@ -213,7 +215,7 @@ contract portfolio is ERC721{
         delete _listedPortfolioOwner[token_id];
         
         // Forward payment to seller
-        payable(portfolioOwnerAddress).transfer(msg.value);
+        IERC20(_paymentTokenAddress).transferFrom(msg.sender,portfolioOwnerAddress,totalPortfolioValue);
         
     }
     function myTransferFrom(address from, address to, uint256 id) public {
@@ -228,8 +230,9 @@ contract portfolio is ERC721{
     }
 
 
-    constructor(){
+    constructor(address paymentTokenAddress){
         tokenCount = 0;
+        _paymentTokenAddress = paymentTokenAddress;
     }
 
     function getStockListingsLength(address stockAddress) public view returns (uint256) {

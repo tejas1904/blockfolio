@@ -324,8 +324,16 @@ async function buyToken() {
     }
     console.log("total value of the tokenId:", totalPrice.toString());
 
+    const yodaContract = await new ethers.Contract(wm.yodaContractAddress, wm.yodaContractABI, wm.signer);
+    const tx = await yodaContract.approve(wm.portfolioContractAddress, totalPrice);
+    const receipt = await tx.wait(); // wait for transaction to be mined
+    console.log(`The portfolio contract is approved to transfer yoda of ${totalPrice.toString()}`);
+    const allowance = await yodaContract.allowance(await wm.signer.getAddress(), wm.portfolioContractAddress);
+    console.log("The allowance is:",allowance.toString());
+
     try {
-        const tx = await wm.portfolioContract.buyPortfolio(tokenIdToBuy,{value:totalPrice});
+
+        const tx = await wm.portfolioContract.buyPortfolio(tokenIdToBuy);
         const receipt = await tx.wait();
         console.log("Transaction mined in block:", receipt.blockNumber);
         alert("Portfolio bought successfully!");
