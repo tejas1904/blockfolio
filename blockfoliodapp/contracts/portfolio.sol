@@ -252,6 +252,24 @@ contract portfolio is ERC721{
         emit Transfer(address(0), msg.sender, tokenCount);
     }
 
+    string private constant _name = "Blockfolio";
+    string private constant _symbol = "BFOL";
+    string private constant TOKEN_URI = "https://raw.githubusercontent.com/tejas1904/blockfolio/refs/heads/main/metadata/stock-nft.json";
+
+    function name() external view  returns (string memory) {
+        return _name;
+    }
+
+    function symbol() external view  returns (string memory) {
+        return _symbol;
+    }
+
+    function tokenURI(uint256 tokenId) external view  returns (string memory) {
+        require(_ownerOf[tokenId] != address(0), "ERC721Metadata: URI query for nonexistent token");
+        return TOKEN_URI;
+    }
+
+
     //given the tokenId of a portfolio and a stockFtAddress update the portfolio with the msg.senders ownership
     function updatePortfolio (address stockFtAddress) public returns (uint){
         //check if erc20 is valid 
