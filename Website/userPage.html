@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" type="text/css" href="styles.css" />
+    <title>lockfolio</title>
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.2.0/dist/ethers.umd.min.js"></script>
+  </head>
+  <body>
+
+    <div class="parent">
+
+      <div class="grid_item_1 grid-item"></div>
+
+      <div class="grid_item_2 grid-item">
+
+        <div class="nav">
+
+            <div class="nav__logo">
+                <h1>Blockfolio</h1>
+            </div>
+
+            <div class="nav__menu">
+                <div class="menu__item", id="list_token_button">
+                    <span>sell wallet</span>
+                </div>
+
+                <div class="menu__item", id="create_wallet_button">
+                    <span>mint wallet</span>
+                </div>
+
+                <div class="menu__item", id="connect_button">
+                    <span>Connect Wallet</span>
+                </div>
+
+            </div>
+
+        </div>
+        
+      </div>
+
+      <div class="grid_item_3 grid-item"></div>
+      <div class="grid_item_4 grid-item"></div>
+      
+      <div class="grid_item_5 grid-item">
+
+        <div class="sub-heading">
+            <span>Profile</span>
+        </div>
+
+      </div>
+
+      <div class="grid_item_6 grid-item"></div>
+      <div class="grid_item_7 grid-item"></div>
+
+      <div class="grid_item_8 grid-item">
+        
+        <div class="profile">
+
+            <div class="profile_grid_1 profile_grid profile_img">
+                <img src="/assets/icons/image.png" alt="">
+            </div>
+
+            <div class="profile_grid_2 profile_grid profile_details">
+
+                <span class="name" id = "DiD">Tejas Sarvasetty</span>
+
+                <div class="details_bloc">
+
+                    <img src="/assets/icons/email.png" alt="">
+
+                    <div class="bloc__text">
+                        <span>Did</span>
+                        <span id = "did">tejas@example.com</span>
+                    </div>
+
+                </div>
+
+                <div class="details_bloc">
+
+                    <img src="/assets/icons/blockchain.png" alt="">
+
+                    <div class="bloc__text">
+                        <span>Blockfolio ID</span>
+                        <span id="token_id_text"></span>
+                    </div>
+                    
+                </div>
+
+            </div>
+
+            <div class="profile_grid_3 profile_grid info">
+
+                <img src="/assets/icons/wallet.png" alt="">
+
+                <div class="info_card">
+                    <span>Yoda balance</span>
+                    <span id = "yoda_balance">0</span>
+                </div>
+
+            </div>
+
+            <div class="profile_grid_4 profile_grid">
+
+                <div class="cta_wrapper">
+                    <img src="/assets/icons/plus.png" alt="">
+                </div>
+
+            </div>
+
+            <div class="profile_grid_5 profile_grid info">
+
+                <img src="/assets/icons/gas.png" alt="">
+                
+                <div class="info_card">
+                    <span>Worth</span>
+                    <span id = "portfolio_value_yoda">$ 793,383.00</span>
+                </div>
+
+            </div>
+            <div class="profile_grid_6 profile_grid">
+                
+                <div class="cta_wrapper">
+                    <img src="/assets/icons/plus.png" alt="">
+                </div>
+
+            </div>
+
+        </div>
+
+      </div>
+
+      <div class="grid_item_9 grid-item"></div>
+      <div class="grid_item_10 grid-item"></div>
+      <div class="grid_item_11 grid-item"></div>
+      <div class="grid_item_12 grid-item"></div>
+      <div class="grid_item_13 grid-item"></div>
+
+      <div class="grid_item_14 grid-item">
+
+        <div class="sub-heading">
+            <span>My Portfolio</span>
+        </div>
+      </div>
+
+      <div class="grid_item_15 grid-item"></div>
+      <div class="grid_item_16 grid-item"></div>
+
+      <div class="grid_item_17 grid-item portfolio">
+
+        <!-- <div class="stock__card__base">
+
+            <img class="img_bg" src="assets/icons/tesla.png" alt="">
+
+            <div class="stock__card">
+
+                <div class="card__left">
+
+                    <div class="left__stock">
+
+                        <img src="assets/icons/tesla.png" alt="">
+
+                        <div class="stock_qty">
+
+                            <span>24</span>
+                            <span>QTY</span>
+
+                        </div>
+
+                    </div>
+
+                    <div class="left__info">
+
+                        <div class="info__name stock-meta">
+                            <span>TSLA</span>
+                            <span>Tesla</span>
+                        </div>
+
+                        <div class="info__price stock-meta">
+                            <span>Stock Price</span>
+                            <span>$ 193.67</span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="dotted"></div>
+
+                <div class="card__right">
+
+                    <div class="right__pl">
+                        <span>Total P/L</span>
+                        <span>$ 100,000</span>
+                    </div>
+
+                    <div class="chart">
+                        <svg viewBox="0 0 200 100" class="line">
+                          <path d="M0,80 Q50,30 100,40 Q150,50 200,20" stroke="green" stroke-width="3" fill="none" />
+                        </svg>
+                        
+                        <div class="label top">
+                          <span>$193.67</span> ▶
+                        </div>
+                        
+                        <div class="label bottom">
+                          ◀ <span>$101.68</span>
+                        </div>
+                    </div>      
+
+                </div>
+
+                <div class="card__actions">
+                    <div class="action">
+                        <img src="assets/icons/plus_act.png" alt="">
+                    </div>
+                    <div class="action">
+                        <img src="assets/icons/minus_act.png" alt="">
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="stock__card__base">
+
+            <img class="img_bg" src="assets/icons/tesla.png" alt="">
+
+            <div class="stock__card">
+
+                <div class="card__left">
+
+                    <div class="left__stock">
+
+                        <img src="assets/icons/tesla.png" alt="">
+
+                        <div class="stock_qty">
+
+                            <span>24</span>
+                            <span>QTY</span>
+
+                        </div>
+
+                    </div>
+
+                    <div class="left__info">
+
+                        <div class="info__name stock-meta">
+                            <span>TSLA</span>
+                            <span>Tesla</span>
+                        </div>
+
+                        <div class="info__price stock-meta">
+                            <span>Stock Price</span>
+                            <span>$ 193.67</span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="dotted"></div>
+
+                <div class="card__right">
+
+                    <div class="right__pl">
+                        <span>Total P/L</span>
+                        <span>$ 100,000</span>
+                    </div>
+
+                    <div class="chart">
+                        <svg viewBox="0 0 200 100" class="line">
+                          <path d="M0,80 Q50,30 100,40 Q150,50 200,20" stroke="green" stroke-width="3" fill="none" />
+                        </svg>
+                        
+                        <div class="label top">
+                          <span>$193.67</span> ▶
+                        </div>
+                        
+                        <div class="label bottom">
+                          ◀ <span>$101.68</span>
+                        </div>
+                    </div>      
+
+                </div>
+
+                <div class="card__actions">
+                    <div class="action">
+                        <img src="assets/icons/plus_act.png" alt="">
+                    </div>
+                    <div class="action">
+                        <img src="assets/icons/minus_act.png" alt="">
+                    </div>
+                </div>
+
+            </div>
+
+        
+        </div> -->
+
+      </div>
+
+      <div class="grid_item_18 grid-item"></div>
+    </div>
+
+    <!-- Add 'popup-active' to make bg visible -->
+    <div class="popup" id="popupBg">
+
+        <!-- Add 'popup__stock-buy-active' to make it visible -->
+        <div class="popup__stock-buy" , id="stockBuyPopup">
+
+            <div class="popup__stock-buy__info">
+
+                <div class="stock__info__meta">
+
+                    <img src="assets/icons/tesla.png" alt="">
+
+                    <div class="stock__scrip">
+                        <span>TSLA</span>
+                        <span>Tesla</span>
+                    </div>
+
+                    <div class="stock__price">
+                        <span>Stock Price</span>
+                        <span>$ 197.45</span>
+                    </div>
+
+                </div>
+
+                <span class="sub__heading">
+                    Buying Quantity
+                </span>
+
+                <div class="stock__counter">
+                    <img src="assets/icons/minus_buy.png" alt="" id="minusBtn">
+
+                    <span id = "counter_value">50</span>
+
+                    <img src="assets/icons/plus_buy.png" alt="" id="plusBtn">
+                </div>
+
+            </div>
+
+            <div class="popup__stock-buy__price">
+
+                <span>Total</span>
+                <span>$ 900.00</span>
+                <span>is</span>
+                <img src="assets/icons/yoda.png" alt="">
+                <span>900.00</span>
+
+            </div>
+
+            <div class="popup__stock-buy__actions">
+
+                <button id = "cancel_buy_stock_btn">Cancel</button>
+                <button id = "buy_stock_btn">Buy</button>
+
+            </div>
+
+        </div>
+
+        <!-- Add 'popup__stock-sell-active' to make it visible -->
+        <div class="popup__stock-sell" id="stockSellPopup">
+
+            <div class="popup__stock-sell__info">
+
+                <div class="stock__info__meta">
+
+                    <img src="assets/icons/tesla.png" alt="">
+
+                    <div class="stock__scrip">
+                        <span>TSLA</span>
+                        <span>Tesla</span>
+                    </div>
+
+                    <div class="stock__price">
+                        <span>Stock Price</span>
+                        <span>$ 197.45</span>
+                    </div>
+
+                </div>
+
+                <span class="sub__heading">
+                    Selling Quantity
+                </span>
+
+                <div class="stock__counter">
+                    <img src="assets/icons/minus_buy.png" alt="" id="minusBtnSell">
+
+                    <span id = "counter_value_sell">50</span>
+
+                    <img src="assets/icons/plus_buy.png" alt="" id="plusBtnSell">
+                </div>
+
+            </div>
+
+            <div class="popup__stock-sell__price">
+
+                <span>Total</span>
+                <span>$ 900.00</span>
+                <span>is</span>
+                <img src="assets/icons/yoda.png" alt="">
+                <span>900.00</span>
+
+            </div>
+
+            <div class="popup__stock-sell__actions">
+
+                <button id = "cancel_sell_stock_btn">Cancel</button>
+                <button id = "sell_stock_btn">Sell</button>
+
+            </div>
+
+        </div>
+
+        <!-- Add 'popup__error-active' to make it visible -->
+        <div class="popup__error">
+
+            <img class="ufo" src="assets/icons/ufo.png" alt="">
+
+            <div class="error__info">
+                <span>Error</span>
+                <span class="info">Please connect with portfolio</span>
+
+                <div class="error__actions">
+                    <button>Cancel</button>
+                    <button>Okay</button>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+    <script type="module" src="userPageScript.js"></script>
+  </body>
+</html>
