@@ -40,7 +40,7 @@ This will deploy the smart contracts to the local Hardhat blockchain.
 
 Open another terminal and execute:
 ```sh
-cd blockfolio-frontend
+cd Website
 npx http-server
 ```
 
