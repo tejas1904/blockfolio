@@ -59,6 +59,7 @@ async function connectMetaMaskAndContract() {
     }
     
 }
+
 export async function createWallet() {
     if (!wm.walletConnected) {
         alert("Please connect your wallet (MetaMask) first.");
@@ -94,7 +95,6 @@ export async function createWallet() {
 
     getUpdatedPortfolio();
 }
-
 
 async function getPrice(address, count) {
     try {
@@ -226,7 +226,7 @@ async function updateTransactionToDb(receipt, stockTokenName, action = "buy") {
         results.push(response.data);
       } catch (error) {
         console.error(
-          "Error updating transaction to db:",
+          "Error updating transaction stocktrade to db:",
           error.response?.data || error.message,
           "Payload was:",
           payload
@@ -237,6 +237,7 @@ async function updateTransactionToDb(receipt, stockTokenName, action = "buy") {
   
     return results;
   }
+
   
 async function buyStock() {
     if (!await checkConditions()) {
@@ -317,7 +318,6 @@ async function fetchStockPrice(companyName) {
         return 193; 
     }
 }
-
 
 async function getUpdatedPortfolio() {
     if (!await checkConditions()) {
@@ -447,6 +447,59 @@ async function getUpdatedPortfolio() {
 
 }
 
+async function updateStockListToDb(receipt) {
+    const txHash = receipt.transactionHash;
+    const block_number = receipt.blockNumber;
+    const events = receipt.events ?? [];
+    const stockEvents = events.filter(e => e.event === "StockListed");
+  
+    if (!txHash) throw new Error("Missing transactionHash in receipt");
+    if (stockEvents.length === 0) {
+      console.warn("No StockListed events found in receipt:", receipt);
+      return [];
+    }
+  
+    const results = [];
+  
+    for (const event of stockEvents) {
+      const args = event.args ?? [];
+      const seller = args[0];
+      const stockFtAddress = args[1];
+      const tradedCount = args[2];   // BigNumber
+  
+      console.log("seller:", seller);
+      console.log("stockFtAddress:", stockFtAddress);
+      console.log("count:", tradedCount?.toString?.());
+      
+  
+      const payload = {
+        "seller_address": seller,
+        "stock_token_address": stockFtAddress,
+        "count": Number(tradedCount.toString()),
+        "tx_hash": txHash,
+        "block_number": block_number
+      };
+  
+      try {
+        const response = await axios.post(
+          "http://127.0.0.1:8000/listings/liststock",
+          payload
+        );
+  
+        results.push(response.data);
+      } catch (error) {
+        console.error(
+          "Error updating transaction stocklist to db:",
+          error.response?.data || error.message,
+          "Payload was:",
+          payload
+        );
+        throw error;
+      }
+    }
+  
+    return results;
+  }
 async function listStockForSale(){
     if (!await checkConditions()) {
         return;
@@ -519,6 +572,7 @@ async function listStockForSale(){
         const tx = await wm.portfolioContract.list_stock_to_sell(stockFtAddress, count);
         console.log("Transaction sent:", tx);
         const receipt = await tx.wait();
+        updateStockListToDb(receipt);
         console.log("Transaction mined in block:", receipt.blockNumber);
         alert("Stock listed for sale successfully!");
     }

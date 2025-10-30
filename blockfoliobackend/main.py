@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pymongo import AsyncMongoClient
 from pymongo.errors import DuplicateKeyError, PyMongoError
 import datamodels
-from datamodels import CreateUserBody, UpdateUserBody, PortfolioItemsBody, ResponseModel, StockTradeModel
+from datamodels import CreateUserBody, UpdateUserBody, PortfolioItemsBody, ResponseModel, StockTradeModel, StockListModel
 
 app = FastAPI()
 
@@ -20,6 +20,7 @@ client = AsyncMongoClient(MONGO_URI)
 db = client["blockfolio"]
 users_collection = db["users"]
 transactions_collection = db["transactions"]
+listings_collection = db["listings"]
 
 
 def norm_wallet(addr: str) -> str:
@@ -139,12 +140,43 @@ async def add_transaction(body :StockTradeModel, response_model=ResponseModel, s
 
 @app.get("/transactions", response_model=ResponseModel, status_code=200)
 async def get_transactions():
-
-    
+    query = {}
     transactions = await transactions_collection.find(
-        {},
+        query,
         {"_id": 0}
-    ).to_list()
+    ).sort("block_number", -1).to_list()
     
 
     return ResponseModel(success=True, action="fetched", data={"transactions": transactions})
+
+
+@app.post("/listings/liststock", response_model=ResponseModel, status_code=200)
+async def add_stock_list(body: StockListModel):
+    doc = {
+        "seller_address": body.seller_address,
+        "stock_token_address": body.stock_token_address,
+        "count": body.count,
+        "tx_hash": body.tx_hash,
+        "block_number": body.block_number,
+        "timestamp": body.timestamp if body.timestamp else None,
+    }
+
+    try:
+        await listings_collection.insert_one(doc)
+    except PyMongoError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    return ResponseModel(success=True, action="stock listed")
+
+@app.get("/listings/listedstock", response_model=ResponseModel, status_code=200)
+async def get_stock_list():
+    query = {}
+    try:
+        transactions = await listings_collection.find(
+            query,
+            {"_id": 0}
+        ).sort("block_number", -1).to_list()
+
+        return ResponseModel(success=True, action="fetched", data={"transactions": transactions})
+    except PyMongoError as e:
+        raise HTTPException(status_code=400, detail=str(e))

@@ -36,4 +36,11 @@ class StockTradeModel(BaseModel):
     block_number: int
     timestamp: str|None = None
 
+class StockListModel(BaseModel):
+    seller_address: str
+    stock_token_address: str
+    count: int
+    tx_hash: str
+    block_number: int
+    timestamp: str|None = None
 
