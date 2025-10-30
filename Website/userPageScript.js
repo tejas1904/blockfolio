@@ -176,7 +176,68 @@ function closeSellStockPopup() {
     document.getElementById("stockSellPopup").classList.remove("popup__stock-sell-active"); // Corrected this line to remove the correct class
 }
 
-
+async function updateTransactionToDb(receipt, stockTokenName, action = "buy") {
+    const txHash = receipt.transactionHash;
+    const block_number = receipt.blockNumber;
+    const events = receipt.events ?? [];
+    const stockEvents = events.filter(e => e.event === "StockTraded");
+  
+    if (!txHash) throw new Error("Missing transactionHash in receipt");
+    if (stockEvents.length === 0) {
+      console.warn("No StockTraded events found in receipt:", receipt);
+      return [];
+    }
+  
+    const results = [];
+  
+    for (const event of stockEvents) {
+      const args = event.args ?? [];
+      const buyer = args[0];
+      const seller = args[1];
+      const stockFtAddress = args[2];
+      const tradedCount = args[3];   // BigNumber
+      const unitPrice = args[4];     // BigNumber
+      const partialPrice = args[5];  // BigNumber //also known as total price
+  
+      console.log("buyer:", buyer);
+      console.log("seller:", seller);
+      console.log("stockFtAddress:", stockFtAddress);
+      console.log("count:", tradedCount?.toString?.());
+      console.log("unitPrice:", unitPrice?.toString?.());
+      console.log("total_price:", partialPrice?.toString?.());
+  
+      const payload = {
+        "buyer_address": buyer,
+        "seller_address": seller,
+        "stock_token_address": stockFtAddress,
+        "count": Number(tradedCount.toString()),
+        "unit_price": Number(unitPrice.toString()),
+        "total_price": Number(partialPrice.toString()),
+        "tx_hash": txHash,
+        "block_number": block_number
+      };
+  
+      try {
+        const response = await axios.post(
+          "http://127.0.0.1:8000/transactions/stocktrade",
+          payload
+        );
+  
+        results.push(response.data);
+      } catch (error) {
+        console.error(
+          "Error updating transaction to db:",
+          error.response?.data || error.message,
+          "Payload was:",
+          payload
+        );
+        throw error;
+      }
+    }
+  
+    return results;
+  }
+  
 async function buyStock() {
     if (!await checkConditions()) {
         return;
@@ -218,9 +279,13 @@ async function buyStock() {
         const tx = await wm.portfolioContract.buy(stockFtAddress, count);
         console.log("Transaction sent:", tx);
         const receipt = await tx.wait();
+        
         console.log("Transaction mined in block:", receipt.blockNumber);
         alert("Stock bought successfully!");
+        
+        await updateTransactionToDb(receipt, stockName, "buy");
         await getUpdatedPortfolio(); 
+        
     } catch (error) {
         console.error("Transaction failed:", error);
         
@@ -517,8 +582,6 @@ async function listTokenForSale() {
     const tx = await wm.portfolioContract.listPortfolioToSell();
     const receipt = await tx.wait();
 }
-
-
 
 export async function buyToken() {
     if (!wm.walletConnected) {

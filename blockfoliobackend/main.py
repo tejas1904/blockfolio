@@ -1,0 +1,150 @@
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pymongo import AsyncMongoClient
+from pymongo.errors import DuplicateKeyError, PyMongoError
+import datamodels
+from datamodels import CreateUserBody, UpdateUserBody, PortfolioItemsBody, ResponseModel, StockTradeModel
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://127.0.0.1:8080", "http://localhost:8080"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+MONGO_URI = "mongodb://localhost:27017"
+client = AsyncMongoClient(MONGO_URI)
+db = client["blockfolio"]
+users_collection = db["users"]
+transactions_collection = db["transactions"]
+
+
+def norm_wallet(addr: str) -> str:
+    addr = (addr or "").strip()
+    if not addr:
+        raise HTTPException(status_code=400, detail="wallet_address is required")
+    return addr
+
+
+@app.get("/")
+async def health():
+    return {"status": "ok"}
+
+# create a user
+@app.post("/users", response_model=ResponseModel, status_code=200)
+async def create_user(body: CreateUserBody):
+    wallet = norm_wallet(body.wallet_address)
+
+    doc = {
+        "wallet_address": wallet,
+        "name": body.name,
+        "portfolionfts": body.portfolionfts,
+    }
+
+    try:
+        await users_collection.insert_one(doc)
+    except DuplicateKeyError:
+        raise HTTPException(status_code=400, detail="User already exists")
+
+    return ResponseModel(success=True, action="created")
+
+# get details for a user
+@app.get("/users/{wallet_address}", response_model=ResponseModel,status_code=200)
+async def get_user(wallet_address: str):
+    wallet = norm_wallet(wallet_address)
+
+    user = await users_collection.find_one({"wallet_address": wallet}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return ResponseModel(success=True, action="fetched", data=user)
+
+# update username
+@app.put("/users/{wallet_address}/modify", response_model=ResponseModel, status_code=200)
+async def update_user(wallet_address: str, body: UpdateUserBody):
+    wallet = norm_wallet(wallet_address)
+
+    update_data = {}
+    if body.name is not None:
+        update_data["name"] = body.name
+
+    if not update_data:
+        return {"success": True, "action": "no_changes"}
+
+    res = await users_collection.update_one({"wallet_address": wallet}, {"$set": update_data})
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return {"success": True, "action": "updated"}
+
+# add a nft to the users list
+@app.patch("/users/{wallet_address}/portfolio/add", response_model=ResponseModel, status_code=200)
+async def add_to_portfolio(wallet_address: str, body: PortfolioItemsBody):
+    wallet = norm_wallet(wallet_address)
+
+    deduped = list(set(body.nfts))
+
+    res = await users_collection.update_one(
+        {"wallet_address": wallet},
+        {"$addToSet": {"portfolionfts": {"$each": deduped}}},
+    )
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return ResponseModel(success=True, action="portfolio(s)_added")
+
+#remove an nft from the users list
+@app.patch("/users/{wallet_address}/portfolio/delete", response_model=ResponseModel, status_code=200)
+async def remove_from_portfolio(wallet_address: str, body: PortfolioItemsBody):
+    wallet = norm_wallet(wallet_address)
+
+    res = await users_collection.update_one(
+        {"wallet_address": wallet},
+        {"$pull": {"portfolionfts": {"$in": body.nfts}}},
+    )
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return ResponseModel(success=True, action="portfolio(s)_removed")
+
+
+# add a transaction for a user
+
+@app.post("/transactions/stocktrade")
+async def add_transaction(body :StockTradeModel, response_model=ResponseModel, status_code=200):
+
+    doc = {
+        "buyer_address": body.buyer_address,
+        "seller_address": body.seller_address,
+        "stock_token_address": body.stock_token_address,
+        "count": body.count,
+        "unit_price": body.unit_price,
+        "total_price": body.total_price,
+        "tx_hash": body.tx_hash,
+        "block_number": body.block_number,
+        "timestamp": body.timestamp if body.timestamp else None
+    }
+
+
+    try:
+        await transactions_collection.insert_one(doc)
+    except PyMongoError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+    return ResponseModel(success=True, action="transaction added")
+
+@app.get("/transactions", response_model=ResponseModel, status_code=200)
+async def get_transactions():
+
+    
+    transactions = await transactions_collection.find(
+        {},
+        {"_id": 0}
+    ).to_list()
+    
+
+    return ResponseModel(success=True, action="fetched", data={"transactions": transactions})

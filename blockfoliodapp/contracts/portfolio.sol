@@ -154,6 +154,41 @@ contract portfolio is ERC721{
     //mapping of a tokenId->address of owner
     mapping(uint256 => address)public _listedPortfolioOwner;
 
+    event StockListed(
+        address indexed seller,
+        address indexed stockToken,
+        uint256 count
+    );
+    event StockTraded(
+        address indexed buyer,
+        address indexed seller,
+        address indexed stockToken,
+        uint256 count,
+        uint256 unitPrice,
+        uint256 totalPrice
+    );
+    event PortfolioListed(address indexed seller, uint256 indexed tokenId);
+    event PortfolioTraded(
+        address indexed buyer,
+        address indexed seller,
+        uint256 indexed tokenId,
+        uint256 totalPrice
+    );
+    event PortfolioTradeItem(
+        address indexed buyer,
+        address indexed seller,
+        uint256 indexed tokenId,
+        address stockToken,
+        uint256 count,
+        uint256 unitPrice,
+        uint256 totalPrice
+    );
+
+    event StockListingDelisted(
+        address indexed stockFtAddress,
+        address indexed seller
+    );
+
     function getTokenStockAddresses(uint256 tokenId) public view returns (address[] memory) {
         require(_tokenStockAddresses[tokenId].length > 0, "No stocks found for this token ID");
         return _tokenStockAddresses[tokenId];
@@ -167,6 +202,7 @@ contract portfolio is ERC721{
         // List the portfolio for sale
         _isPortfolioForSale[token_id] = true;
         _listedPortfolioOwner[token_id] = msg.sender;
+        emit PortfolioListed(msg.sender, token_id);
     }
 
     function buyPortfolio(uint256 token_id) public {
@@ -196,7 +232,18 @@ contract portfolio is ERC721{
             if (_tokenHasStock[token_id][stockAddress]) {
                 uint256 balanceOfStock = IERC20(stockAddress).balanceOf(portfolioOwnerAddress);
                 if (balanceOfStock > 0) {
+                    uint256 unitPrice = getAPrice(stockAddress);
+                    uint256 itemTotal = unitPrice * balanceOfStock;
                     IERC20(stockAddress).transferFrom(portfolioOwnerAddress, msg.sender, balanceOfStock);
+                    emit PortfolioTradeItem(
+                        msg.sender,
+                        portfolioOwnerAddress,
+                        token_id,
+                        stockAddress,
+                        balanceOfStock,
+                        unitPrice,
+                        itemTotal
+                    );
                 }
             }
         }
@@ -216,6 +263,7 @@ contract portfolio is ERC721{
         
         // Forward payment to seller
         IERC20(_paymentTokenAddress).transferFrom(msg.sender,portfolioOwnerAddress,totalPortfolioValue);
+        emit PortfolioTraded(msg.sender, portfolioOwnerAddress, token_id, totalPortfolioValue);
         
     }
     function myTransferFrom(address from, address to, uint256 id) public {
@@ -293,6 +341,10 @@ contract portfolio is ERC721{
 
     function list_stock_to_sell(address stockFtAddress,uint256 count) public{
         uint256 token_id = _ownedToken[msg.sender];
+
+        //cant list if portfolio is listed for sale
+        require(!_isPortfolioForSale[token_id],"portfolio is listed for sale");
+        
         updatePortfolio(stockFtAddress);
         //check if erc20 is valid 
         require(IERC20(stockFtAddress).totalSupply() > 0, "Invalid ERC-20 contract");
@@ -322,6 +374,11 @@ contract portfolio is ERC721{
         // Update the user's listed amount
         _userListedStocks[msg.sender][stockFtAddress] += count;
 
+        emit StockListed(
+            msg.sender,
+            stockFtAddress,
+            count
+        );
     }
 
     function getPrice(address stockFtAddress,uint count) public view  returns (uint256){
@@ -350,6 +407,8 @@ contract portfolio is ERC721{
     require(_totalSellCount[stockFtAddress] >= count, "Not enough stock available for sale");
 
     uint256 token_id = _ownedToken[msg.sender];
+    //cant buy  if portfolio is listed for sale
+    require(!_isPortfolioForSale[token_id],"portfolio is listed for sale you cant buy");
     // Check if the portfolio (tokenID) is owned by the sender
     require(_ownerOf[token_id] == msg.sender, "You are not the owner of this portfolio!");
 
@@ -368,13 +427,23 @@ contract portfolio is ERC721{
 
         if (remainingToBuy >= listing.count) {
             // Buy entire listing
-            uint256 partialPrice = getAPrice(stockFtAddress) * listing.count;
+            uint256 unitPrice = getAPrice(stockFtAddress);
+            uint256 partialPrice = unitPrice * listing.count;
             
             // Transfer stock from seller to buyer
             IERC20(stockFtAddress).transferFrom(listing.seller, msg.sender, listing.count);
             
             // Transfer payment from buyer to seller
             IERC20(_paymentTokenAddress).transferFrom(msg.sender, listing.seller, partialPrice);
+
+            emit StockTraded(
+                msg.sender,
+                listing.seller,
+                stockFtAddress,
+                listing.count,
+                unitPrice,
+                partialPrice
+            );
             
             remainingToBuy -= listing.count;
             _totalSellCount[stockFtAddress] -= listing.count;
@@ -385,13 +454,23 @@ contract portfolio is ERC721{
             // Note: delistStockListing will adjust the array, so don't increment i
         } else {
             // Partial buy
-            uint256 partialPrice = getAPrice(stockFtAddress) * remainingToBuy;
+            uint256 unitPrice = getAPrice(stockFtAddress);
+            uint256 partialPrice = unitPrice * remainingToBuy;
             
             // Transfer stock from seller to buyer
             IERC20(stockFtAddress).transferFrom(listing.seller, msg.sender, remainingToBuy);
             
             // Transfer payment from buyer to seller
             IERC20(_paymentTokenAddress).transferFrom(msg.sender, listing.seller, partialPrice);
+
+            emit StockTraded(
+                msg.sender,
+                listing.seller,
+                stockFtAddress,
+                remainingToBuy,
+                unitPrice,
+                partialPrice
+            );
             
             listing.count -= remainingToBuy;
             _totalSellCount[stockFtAddress] -= remainingToBuy;
@@ -417,5 +496,7 @@ contract portfolio is ERC721{
         StockListing memory lastListing = _stocksForSale[stockFtAddress][_stocksForSale[stockFtAddress].length - 1];
         _stocksForSale[stockFtAddress][listingIndex] = lastListing;
         _stocksForSale[stockFtAddress].pop();
+
+        emit StockListingDelisted(stockFtAddress,seller);
     }
 }
