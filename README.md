@@ -6,6 +6,8 @@ Ensure you have the following installed:
 - [Node.js](https://nodejs.org/) (LTS version recommended)
 - [Hardhat](https://hardhat.org/)
 - [http-server](https://www.npmjs.com/package/http-server)
+- python 3.10 +
+- mongo db
 - Linux Terminal (tested on debian)
 
 ## Steps to Run the Project
@@ -46,7 +48,29 @@ npx http-server
 
 This will start a local web server for the frontend.
 
-# Prereq  Adding Hardhat Network to MetaMask
+## Database Setup Required
+
+Creates the `blockfolio` database and initializes the core collections used by the application.
+
+```sh
+use blockfolio
+db.createCollection("listings")
+db.createCollection("transactions")
+db.createCollection("users")
+```
+
+## APIs (Required)
+
+Starts the backend API server for the Blockfolio application.
+
+```sh
+cd blockfoliobackend/
+pip install -r requirements.txt
+uvicorn api:app --reload
+
+```
+
+# (Prereq)  Adding Hardhat Network to MetaMask
 
 This guide will help you add the Hardhat local blockchain as a network in MetaMask and import an account from Hardhat.
 

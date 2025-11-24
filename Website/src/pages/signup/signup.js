@@ -1,5 +1,5 @@
-import {wm} from "./main.js";
-import {createWallet,buyToken} from "./userPageScript.js";
+import { wm } from "/src/core/walletManager.js";
+import {createWallet,buyToken} from "/src/pages/user/userPage.js";
 
 document.addEventListener("DOMContentLoaded", function() {
 

@@ -1,0 +1,380 @@
+/* History Page Specific Styles */
+
+/* Override the parent grid for history page to remove gap rows */
+body .parent {
+    grid-template-rows: 0.5fr 0.5fr 0.5fr 3fr;
+}
+
+/* Reassign grid items to new row positions */
+
+body .grid_item_16 {
+    grid-area: 4 / 1 / 5 / 2;
+}
+
+body .grid_item_17 {
+    grid-area: 4 / 2 / 5 / 3;
+    display: block;
+    height: fit-content;
+}
+
+body .grid_item_18 {
+    grid-area: 4 / 3 / 5 / 4;
+}
+
+.history-container {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    height: 100%;
+}
+
+.history-tabs {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    height: 100%;
+    border-bottom: 2px solid black;
+}
+
+.tab-item {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    border-right: 2px solid black;
+    background-color: #101010;
+    transition: background-color 0.3s ease;
+}
+
+.tab-item:last-child {
+    border-right: none;
+}
+
+.tab-item span {
+    color: #6b6b6b;
+    font-size: 20px;
+    font-weight: normal;
+}
+
+.tab-item:hover {
+    background-color: #1a1a1a;
+}
+
+.tab-item.active {
+    background-color: #1f1f1f;
+}
+
+.tab-item.active span {
+    color: #F741D5;
+    font-weight: 500;
+}
+
+.history-list {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+}
+
+.transaction__card {
+    width: 100%;
+    min-height: 180px;
+    background-color: #151515;
+    border-radius: 24px;
+    position: relative;
+    padding: 24px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.transaction__card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(247, 65, 213, 0.1);
+}
+
+.transaction__card__inner {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: row;
+    gap: 32px;
+    backdrop-filter: blur(25px) saturate(181%);
+    -webkit-backdrop-filter: blur(25px) saturate(181%);
+}
+
+.transaction__left {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    gap: 24px;
+    align-items: center;
+}
+
+.transaction__icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 12px;
+}
+
+.transaction__icon img {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 12px;
+}
+
+.bought-icon {
+    background: linear-gradient(135deg, #069A0025 0%, #069A0010 100%);
+    border: 2px solid #069A0040;
+}
+
+.listed-icon {
+    background: linear-gradient(135deg, #F7A10025 0%, #F7A10010 100%);
+    border: 2px solid #F7A10040;
+}
+
+.sold-icon {
+    background: linear-gradient(135deg, #9A1E0025 0%, #9A1E0010 100%);
+    border: 2px solid #9A1E0040;
+}
+
+.transaction__info {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex: 1;
+}
+
+.transaction__meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.stock-symbol {
+    color: #DDDDDD40;
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.stock-name {
+    color: white;
+    font-size: 28px;
+    font-weight: normal;
+}
+
+.transaction__details {
+    display: flex;
+    flex-direction: row;
+    gap: 32px;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.detail-label {
+    color: #6b6b6b;
+    font-size: 14px;
+}
+
+.detail-value {
+    color: #b4b4b4;
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.transaction__divider {
+    width: 2px;
+    height: 100%;
+    background: linear-gradient(180deg, 
+        rgba(112, 112, 112, 0) 0%,
+        rgba(112, 112, 112, 0.3) 50%,
+        rgba(112, 112, 112, 0) 100%
+    );
+}
+
+.transaction__right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+}
+
+.transaction__status {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.status-badge {
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.bought-status .status-badge {
+    background-color: #069A0025;
+    color: #4CAF50;
+    border: 1px solid #069A0050;
+}
+
+.listed-status .status-badge {
+    background-color: #F7A10025;
+    color: #FFC107;
+    border: 1px solid #F7A10050;
+}
+
+.sold-status .status-badge {
+    background-color: #9A1E0025;
+    color: #FF5252;
+    border: 1px solid #9A1E0050;
+}
+
+.transaction__amount {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.amount-label {
+    color: #6b6b6b;
+    font-size: 14px;
+}
+
+.amount-value {
+    font-size: 32px;
+    font-weight: 600;
+    font-family: 'Rotonto', sans-serif;
+}
+
+.bought-color {
+    color: #4CAF50;
+}
+
+.listed-color {
+    color: #FFC107;
+}
+
+.sold-color {
+    color: #FF5252;
+}
+
+.transaction__hash {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.date-label {
+    color: #6b6b6b;
+    font-size: 14px;
+}
+
+.date-value {
+    color: #b4b4b4;
+    font-size: 16px;
+}
+
+/* Hidden state for filtered transactions */
+.transaction__card.hidden {
+    display: none;
+}
+
+/* Empty state */
+.empty-state {
+    width: 100%;
+    height: 300px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+}
+
+.empty-state span:first-child {
+    color: #6b6b6b;
+    font-size: 24px;
+    font-family: 'Rotonto', sans-serif;
+}
+
+.empty-state span:last-child {
+    color: #414141;
+    font-size: 16px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .transaction__card__inner {
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    .transaction__divider {
+        width: 100%;
+        height: 2px;
+        background: linear-gradient(90deg, 
+            rgba(112, 112, 112, 0) 0%,
+            rgba(112, 112, 112, 0.3) 50%,
+            rgba(112, 112, 112, 0) 100%
+        );
+    }
+
+    .transaction__right {
+        align-items: flex-start;
+    }
+
+    .transaction__status {
+        justify-content: flex-start;
+    }
+
+    .transaction__amount,
+    .transaction__hash {
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 768px) {
+    .history-tabs {
+        flex-wrap: wrap;
+    }
+
+    .tab-item {
+        min-width: 50%;
+        border-bottom: 2px solid black;
+    }
+
+    .tab-item:nth-child(odd) {
+        border-right: 2px solid black;
+    }
+
+    .transaction__left {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .transaction__details {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .tx-link {
+        color: red;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+}

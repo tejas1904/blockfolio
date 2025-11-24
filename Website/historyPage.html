@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" type="text/css" href="styles.css" />
+    <link rel="stylesheet" type="text/css" href="historyStyles.css" />
+    <title>Blockfolio - Transaction History</title>
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.2.0/dist/ethers.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.11.0/axios.min.js" referrerpolicy="no-referrer"></script>
+  </head>
+  <body>
+
+    <div class="parent">
+
+      <div class="grid_item_1 grid-item"></div>
+
+      <div class="grid_item_2 grid-item">
+
+        <div class="nav">
+
+            <div class="nav__logo">
+                <h1>Blockfolio</h1>
+            </div>
+
+            <div class="nav__menu">
+                <div class="menu__item" id="portfolio_button">
+                    <span>portfolio</span>
+                </div>
+
+                <div class="menu__item" id="history_button">
+                    <span>history</span>
+                </div>
+
+                <div class="menu__item" id="connect_button">
+                    <span>Connect Wallet</span>
+                </div>
+
+            </div>
+
+        </div>
+        
+      </div>
+
+      <div class="grid_item_3 grid-item"></div>
+      <div class="grid_item_4 grid-item"></div>
+      
+      <div class="grid_item_5 grid-item">
+
+        <div class="sub-heading">
+            <span>Transaction History</span>
+        </div>
+
+      </div>
+
+      <div class="grid_item_6 grid-item"></div>
+
+      <div class="grid_item_16 grid-item"></div>
+
+      <div class="grid_item_17 grid-item">
+
+        <div class="history-list">
+
+        <!-- Bought Transaction Example -->
+        <div class="transaction__card" data-type="bought">
+
+            <div class="transaction__card__inner">
+
+                <div class="transaction__left">
+
+                    <div class="transaction__icon bought-icon">
+                        <img src="assets/icons/tesla.png" alt="TSLA">
+                    </div>
+
+                    <div class="transaction__info">
+
+                        <div class="transaction__meta">
+                            <span class="stock-symbol">TSLA</span>
+                            <span class="stock-name">Tesla</span>
+                        </div>
+
+                        <div class="transaction__details">
+                            <div class="detail-item">
+                                <span class="detail-label">Quantity</span>
+                                <span class="detail-value">24 shares</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Price per share</span>
+                                <span class="detail-value">$ 193.67</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="transaction__divider"></div>
+
+                <div class="transaction__right">
+
+                    <div class="transaction__status bought-status">
+                        <span class="status-badge">Bought</span>
+                    </div>
+
+                    <div class="transaction__amount">
+                        <span class="amount-label">Total Amount</span>
+                        <span class="amount-value bought-color">$ 4,648.08</span>
+                    </div>
+
+                    <div class="transaction__hash">
+                        <span class="date-label">Transaction Hash</span>
+                        <span class="date-value">
+                            0xA48D086ea39c244adbE212DDBb402ffe93ec86b8
+                            <a 
+                                href="https://sepolia.etherscan.io/tx/0xA48D086ea39c244adbE212DDBb402ffe93ec86b8"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="tx-link"
+                            >
+                            🔗
+                            </a>
+
+                        </span>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Listed Transaction Example -->
+        <div class="transaction__card" data-type="listed">
+
+            <div class="transaction__card__inner">
+
+                <div class="transaction__left">
+
+                    <div class="transaction__icon listed-icon">
+                        <img src="assets/icons/apple.png" alt="AAPL">
+                    </div>
+
+                    <div class="transaction__info">
+
+                        <div class="transaction__meta">
+                            <span class="stock-symbol">AAPL</span>
+                            <span class="stock-name">Apple Inc.</span>
+                        </div>
+
+                        <div class="transaction__details">
+                            <div class="detail-item">
+                                <span class="detail-label">Quantity</span>
+                                <span class="detail-value">15 shares</span>
+                            </div>
+                            <!-- <div class="detail-item">
+                                <span class="detail-label">Listed price</span>
+                                <span class="detail-value">$ 245.50</span>
+                            </div> -->
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="transaction__divider"></div>
+
+                <div class="transaction__right">
+
+                    <div class="transaction__status listed-status">
+                        <span class="status-badge">Listed</span>
+                    </div>
+
+                    <!-- <div class="transaction__amount">
+                        <span class="amount-label">Expected Amount</span>
+                        <span class="amount-value listed-color">$ 3,682.50</span>
+                    </div> -->
+
+                    <div class="transaction__hash">
+                        <span class="date-label">Transaction Hash</span>
+                        <span class="date-value">
+                            0xA48D086ea39c244adbE212DDBb402ffe93ec86b8
+                            <a 
+                                href="https://sepolia.etherscan.io/tx/0xA48D086ea39c244adbE212DDBb402ffe93ec86b8"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="tx-link"
+                            >
+                            🔗
+                            </a>
+
+                        </span>
+                    </div>
+                    
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Sold Transaction Example -->
+        <div class="transaction__card" data-type="sold">
+
+            <div class="transaction__card__inner">
+
+                <div class="transaction__left">
+
+                    <div class="transaction__icon sold-icon">
+                        <img src="assets/icons/google.png" alt="GOOGL">
+                    </div>
+
+                    <div class="transaction__info">
+
+                        <div class="transaction__meta">
+                            <span class="stock-symbol">GOOGL</span>
+                            <span class="stock-name">Alphabet Inc.</span>
+                        </div>
+
+                        <div class="transaction__details">
+                            <div class="detail-item">
+                                <span class="detail-label">Quantity</span>
+                                <span class="detail-value">30 shares</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Sold price</span>
+                                <span class="detail-value">$ 189.25</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="transaction__divider"></div>
+
+                <div class="transaction__right">
+
+                    <div class="transaction__status sold-status">
+                        <span class="status-badge">Sold</span>
+                    </div>
+
+                    <div class="transaction__amount">
+                        <span class="amount-label">Total Amount</span>
+                        <span class="amount-value sold-color">$ 5,677.50</span>
+                    </div>
+
+                    <div class="transaction__hash">
+                        <span class="date-label">Transaction Hash</span>
+                        <span class="date-value">
+                            0xA48D086ea39c244adbE212DDBb402ffe93ec86b8
+                            <a 
+                                href="https://sepolia.etherscan.io/tx/0xA48D086ea39c244adbE212DDBb402ffe93ec86b8"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="tx-link"
+                            >
+                            🔗
+                            </a>
+
+                        </span>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        </div>
+
+      </div>
+
+      <div class="grid_item_18 grid-item"></div>
+    </div>
+
+    <script type="module" src="/src/pages/history/historyPage.js"></script>
+  </body>
+</html>

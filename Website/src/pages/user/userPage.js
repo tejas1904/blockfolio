@@ -1,20 +1,30 @@
-import {wm} from "./main.js";
+import { wm } from "/src/core/walletManager.js";
+
+import {
+  displayBuyStockCounter,
+  displaySellStockCounter,
+  closeBuyStockPopup,
+  closeSellStockPopup
+} from "/src/ui/popups.js";
+
+import { checkConditions, setVisibilityOfDivs } from "/src/services/conditions.js";
+import { updateTransactionToDb, updateStockListToDb } from "/src/services/db.js";
+
 
 let portfolioHtmlListElement = null;
 let marketHtmlListElement = null;
-document.addEventListener("DOMContentLoaded", function () {
-    document.getElementById("conect_button").addEventListener("click", connectMetaMaskAndContract);
-    document.getElementById("create_wallet_button").addEventListener("click" , createWallet);
+document.addEventListener("DOMContentLoaded", function() {
+    document.getElementById("connect_button").addEventListener("click", connectMetaMaskAndContract);
+    //document.getElementById("create_wallet_button").addEventListener("click", createWallet);
+    document.getElementById("transaction_history_button").addEventListener("click",function() {window.location.replace("/historyPage.html")} );
     document.getElementById("buy_stock_btn").addEventListener("click", buyStock);
+    document.getElementById("cancel_buy_stock_btn").addEventListener("click", closeBuyStockPopup);
     document.getElementById("sell_stock_btn").addEventListener("click", listStockForSale);
-    document.getElementById("get_updated_portfolio_btn").addEventListener("click", getUpdatedPortfolio);
-    // document.getElementById("clear_cookies_btn").addEventListener("click", clearCookie);
-    document.getElementById("get_updated_market_btn").addEventListener("click", getUpdatedMarketListings);
+    document.getElementById("cancel_sell_stock_btn").addEventListener("click", closeSellStockPopup);
+    //document.getElementById("buy_token_button").addEventListener("click", buyToken);
     document.getElementById("list_token_button").addEventListener("click", listTokenForSale);
-    document.getElementById("buy_token_button").addEventListener("click", buyToken);
-    portfolioHtmlListElement = document.getElementById("portfolio_list");
-    marketHtmlListElement = document.getElementById("market_list");
-    
+    window.addEventListener("load", connectMetaMaskAndContract);
+
 });
 
 function clearCookie() {
@@ -23,42 +33,24 @@ function clearCookie() {
     console.log("User data cleared from cookies.");
 }
 
-function setVisibilityOfDivs(){
-    if (wm.hasMinted){
-        document.getElementById("sell_token_div").style.visibility= "visible";
-        document.getElementById("buy_token_div").style.visibility= "hidden";
-    }
-    else{
-        document.getElementById("sell_token_div").style.visibility= "hidden";
-        document.getElementById("buy_token_div").style.visibility= "visible";
-    }
-}
-
-async function checkConditions() {
-    if (!wm.walletConnected) {
-        alert("Please connect your wallet (metamask) first.");
-        return false;
-    }
-    if (!wm.hasMinted) {
-        alert("Please create your portfolio first.");
-        return false;
-    }
-    return true;
-}
-
 async function connectMetaMaskAndContract() {
     await wm.connectMetaMaskAndContract();
-    let textbox = document.getElementById("connectionstatus");
-    textbox.textContent = `Connected! to account: ${await wm.signer.getAddress()}`;
+    let text = document.getElementById("connect_button").querySelector("span");
+    text.textContent = 'Wallet Connected';
 
     if (wm.hasMinted == true) {
-        let textbox = document.getElementById("tokenid");
+        let textbox = document.getElementById("token_id_text");
         const tokenId = await wm.portfolioContract._ownedToken(await wm.signer.getAddress());
         textbox.textContent = tokenId.toString();
-        setVisibilityOfDivs();
+        getUpdatedPortfolio();
     }
+    else{
+        window.location.href = "signup.html";
+    }
+    
 }
-async function createWallet() {
+
+export async function createWallet() {
     if (!wm.walletConnected) {
         alert("Please connect your wallet (MetaMask) first.");
         return false;
@@ -77,7 +69,7 @@ async function createWallet() {
             alert("Wallet created successfully!");
             wm.hasMinted = true;
 
-            let textbox = document.getElementById("tokenid");
+            let textbox = document.getElementById("token_id_text");
             const tokenId = await wm.portfolioContract._ownedToken(await wm.signer.getAddress());
             textbox.textContent = tokenId.toString();
         } catch (error) {
@@ -86,11 +78,12 @@ async function createWallet() {
     } else {
         alert("Portfolio already created!");
 
-        let textbox = document.getElementById("tokenid");
+        let textbox = document.getElementById("token_id_text");
         const tokenId = await wm.portfolioContract._ownedToken(await wm.signer.getAddress());
         textbox.textContent = tokenId.toString();
     }
-    setVisibilityOfDivs();
+
+    getUpdatedPortfolio();
 }
 
 async function getPrice(address, count) {
@@ -114,84 +107,216 @@ async function getPrice(address, count) {
     }
 }
 
+window.displayBuyStockCounter = displayBuyStockCounter;
+window.displaySellStockCounter = displaySellStockCounter;
 
+  
+async function buyStock() {
+    if (!await checkConditions()) {
+        return;
+    }
 
-    async function buyStock() {
-        if (!await checkConditions()) {
-            return;
-        }
+    const buyPopup = document.getElementById('stockBuyPopup');
+    const stockName = buyPopup.querySelector('.stock__scrip span:nth-child(2)').textContent;
+    const count = buyPopup.querySelector('#counter_value').textContent;
+
+    try {
+        let stockFtAddress = wm.stockNameToAddress[stockName.toString()];
+    }
+    catch (error) {
+        console.error("Invalid stock name or address not found:", error);
+        alert("Invalid stock name or address not found.");
+        return;
+    }
+    const stockFtAddress = wm.stockNameToAddress[stockName.toString()];
+
     
-        const stockName = document.getElementById("stockCompany").value;
-        try {
-            let stockFtAddress = wm.stockNameToAddress[stockName.toString()];
-        }
-        catch (error) {
-            console.error("Invalid stock name or address not found:", error);
-            alert("Invalid stock name or address not found.");
-            return;
-        }
-        const stockFtAddress = wm.stockNameToAddress[stockName.toString()];
-    
-        const count = document.getElementById("stockQuantity").value;
-        
-        console.log("buying stock", stockName.toString(), " with address:", stockFtAddress, "and count:", count);
-        const price = await getPrice(stockFtAddress, count);
-        console.log("price to buy is:", price.toString());
-    
-        // First, we need to approve the portfolio contract to spend our payment tokens
-        try {
-            const yodaContract = new ethers.Contract(wm.yodaContractAddress, wm.yodaContractABI, wm.signer);
-            const tx = await yodaContract.approve(wm.portfolioContractAddress, price);
-            const receipt = await tx.wait(); // wait for transaction to be mined
-            console.log(`The portfolio contract is approved to transfer ${price.toString()} payment tokens`);
-        } catch (error) {
-            console.error("Error in approving payment token transfer:", error);
-            alert("Error in approving payment token transfer.");
-            return;
-        }
-        
-        // Then call the buy function (without sending ETH)
-        try {
-            const tx = await wm.portfolioContract.buy(stockFtAddress, count);
-            console.log("Transaction sent:", tx);
-            const receipt = await tx.wait();
-            console.log("Transaction mined in block:", receipt.blockNumber);
-            alert("Stock bought successfully!");
-            await getUpdatedPortfolio(); 
-        } catch (error) {
-            console.error("Transaction failed:", error);
-            
-            let errorMessage = "Transaction failed.";
-            if (error.reason) {
-                errorMessage = error.reason;
-            } else if (error.data && error.data.message) {
-                errorMessage = error.data.message;
-            }
-            
-            alert(errorMessage);
-        }
+    console.log("buying stock", stockName.toString(), " with address:", stockFtAddress, "and count:", count);
+    const price = await getPrice(stockFtAddress, count);
+    console.log("price to buy is:", price.toString());
+
+    // First, we need to approve the portfolio contract to spend our payment tokens
+    try {
+        const yodaContract = new ethers.Contract(wm.yodaContractAddress, wm.yodaContractABI, wm.signer);
+        const tx = await yodaContract.approve(wm.portfolioContractAddress, price);
+        const receipt = await tx.wait(); // wait for transaction to be mined
+        console.log(`The portfolio contract is approved to transfer ${price.toString()} payment tokens`);
+    } catch (error) {
+        console.error("Error in approving payment token transfer:", error);
+        alert("Error in approving payment token transfer.");
+        return;
     }
     
+    // Then call the buy function (without sending ETH)
+    try {
+        const tx = await wm.portfolioContract.buy(stockFtAddress, count);
+        console.log("Transaction sent:", tx);
+        const receipt = await tx.wait();
+        
+        console.log("Transaction mined in block:", receipt.blockNumber);
+        alert("Stock bought successfully!");
+        
+        await updateTransactionToDb(receipt);
+        await getUpdatedPortfolio(); 
+        
+    } catch (error) {
+        console.error("Transaction failed:", error);
+        
+        let errorMessage = "Transaction failed.";
+        if (error.reason) {
+            errorMessage = error.reason;
+        } else if (error.data && error.data.message) {
+            errorMessage = error.data.message;
+        }
+        
+        alert(errorMessage);
+    }
+    closeBuyStockPopup();
+}
+
+async function fetchStockPrice(companyName) {
+    try {
+        const response = await fetch('/data/stockprice.json'); 
+        const stockPrices = await response.json();
+
+        if (stockPrices[companyName]) {
+            return stockPrices[companyName]; 
+        } else {
+            console.error(`No stock price found for ${companyName}`);
+            return 193;
+        }
+    } catch (error) {
+        console.error("Error fetching stock price:", error);
+        return 193; 
+    }
+}
 
 async function getUpdatedPortfolio() {
     if (!await checkConditions()) {
         return;
     }
-    const tokenId = await wm.portfolioContract._ownedToken(await wm.signer.getAddress());
+
+    //update some ui elements
+    const yodaContract = await new ethers.Contract(wm.yodaContractAddress, wm.yodaContractABI, wm.signer);
+    document.getElementById("did").textContent = (await wm.signer.getAddress()).slice(0, 40) ;
     
-    portfolioHtmlListElement.innerHTML = "";
+    const balance = await yodaContract.balanceOf(await wm.signer.getAddress())/100;
+    document.getElementById("yoda_balance").textContent = balance.toString();
+    
+
+    console.log("getting updated portfolio");
+    const tokenId = await wm.portfolioContract._ownedToken(await wm.signer.getAddress());
+    const portfolioContainer = document.querySelector(".grid_item_17.portfolio"); // Select the portfolio div
+    portfolioContainer.innerHTML = ""; // Clear existing stock cards
+
+    let count = 0;
+    let totalPrice = 0;
+    let totalPriceUSD = 0;
     for (let key in wm.stockNameToAddress) {
+        count +=1 ;
         const stockFtAddress = wm.stockNameToAddress[key];
         let status = await wm.portfolioContract._tokenHasStock(tokenId, stockFtAddress)
         
         const stockContract = new ethers.Contract(stockFtAddress,wm.stockContractABI,wm.signer);
-        const quantity = await stockContract.balanceOf(await wm.signer.getAddress());
+        const quantity = (await stockContract.balanceOf(await wm.signer.getAddress())).toNumber();
+        let price = (await wm.portfolioContract.getAPrice(stockFtAddress)).toNumber();
+        price = price * quantity;
+        totalPrice = totalPrice  + price;
+        console.log("total price of the stock:", totalPrice.toString());
+        
+        let stockPriceUSD = await fetchStockPrice(key);
+        totalPriceUSD = totalPriceUSD + stockPriceUSD * quantity;
+        console.log("total price of the stock in USD:", totalPriceUSD.toString());
         
         console.log("owns stock?", key, "is:", status, "quantity:", quantity.toString());
-        let listItem = document.createElement("li");
-        listItem.textContent = `owns stock? ${key}: ${status} quantity: ${quantity.toString()}`;
-        portfolioHtmlListElement.appendChild(listItem);
+        
+        let stockCard = document.createElement("div");
+        stockCard.classList.add("stock__card__base");
+        stockCard.innerHTML = `
+            <img class="img_bg" src="assets/icons/${key}.png" alt="">
+
+            <div class="stock__card">
+
+                <div class="card__left">
+
+                    <div class="left__stock">
+
+                        <img src="assets/icons/${key}.png" alt="">
+
+                        <div class="stock_qty">
+
+                            <span>${quantity.toString()}</span>
+                            <span>QTY</span>
+
+                        </div>
+
+                    </div>
+
+                    <div class="left__info">
+
+                        <div class="info__name stock-meta">
+                            <span>${key} Inc</span>
+                            <span id = "stock_card_company_name">${key}</span>
+                        </div>
+
+                        <div class="info__price stock-meta">
+                            <span>Stock Price</span>
+                            <span>${stockPriceUSD.toFixed(2)}</span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="dotted"></div>
+
+                <div class="card__right">
+
+                    <div class="right__pl">
+                        <span>Total P/L</span>
+                        <span>$ 100,000</span>
+                    </div>
+
+                    <div class="chart">
+                        <svg viewBox="0 0 200 100" class="line">
+                          <path d="M0,80 Q50,30 100,40 Q150,50 200,20" stroke="green" stroke-width="3" fill="none" />
+                        </svg>
+                        
+                        <div class="label top">
+                          <span>$193.67</span> ▶
+                        </div>
+                        
+                        <div class="label bottom">
+                          ◀ <span>$101.68</span>
+                        </div>
+                    </div>      
+
+                </div>
+
+                <div class="card__actions">
+                    <div class="action" onclick="displayBuyStockCounter('${key}')">
+                        <img src="assets/icons/plus_act.png" alt="">
+                    </div>
+                    <div class="action" onclick="displaySellStockCounter('${key}')">
+                        <img src="assets/icons/minus_act.png" alt="">
+                    </div>
+                </div>
+
+            </div>
+        `;
+        portfolioContainer.appendChild(stockCard);
+        // if (count == 2) {
+        //    break;
+        // }
+    
     }
+
+
+    document.getElementById("portfolio_value_yoda").textContent = (totalPrice/100).toString();
+    document.getElementById("portfolio_value_yoda").innerHTML = 
+    `${(totalPrice / 100)}(Yoda) <br> $${totalPriceUSD.toFixed(2)}`;
+
+
 }
 
 async function listStockForSale(){
@@ -200,7 +325,11 @@ async function listStockForSale(){
     }
 
     // get the paramaters for the list for sale
-    const stockName = document.getElementById("stockCompany").value;
+    const sellPopup = document.getElementById('stockSellPopup');
+    const stockName = sellPopup.querySelector('.stock__scrip span:nth-child(2)').textContent;
+    const count = parseInt(sellPopup.querySelector('#counter_value_sell').textContent, 10);
+    console.log("selling stock", stockName.toString(), " with address:", wm.stockNameToAddress[stockName.toString()], "and count:", count);
+
     try {
         let stockFtAddress = wm.stockNameToAddress[stockName.toString()];
     }
@@ -210,7 +339,7 @@ async function listStockForSale(){
         return;
     }
     const stockFtAddress = wm.stockNameToAddress[stockName.toString()];
-    const count = document.getElementById("stockQuantity").value;
+
 
     //first check if the user has the stock and also if user has enough stock and if hes 
     try {
@@ -262,6 +391,7 @@ async function listStockForSale(){
         const tx = await wm.portfolioContract.list_stock_to_sell(stockFtAddress, count);
         console.log("Transaction sent:", tx);
         const receipt = await tx.wait();
+        updateStockListToDb(receipt);
         console.log("Transaction mined in block:", receipt.blockNumber);
         alert("Stock listed for sale successfully!");
     }
@@ -269,9 +399,12 @@ async function listStockForSale(){
         console.error("Error in listing the stock for sale:", error);
         alert("Error in listing the stock for sale.");
     }
+
+    closeSellStockPopup();
 }
 
 async function getUpdatedMarketListings() {
+    console.log("getting updated market listings");
     if (!await checkConditions()) {
         return;
     }
@@ -323,7 +456,7 @@ async function listTokenForSale() {
     const receipt = await tx.wait();
 }
 
-async function buyToken() {
+export async function buyToken() {
     if (!wm.walletConnected) {
         alert("Please connect your wallet (metamask) first.");
         return ;

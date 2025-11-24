@@ -17,16 +17,17 @@ class WalletManager {
         this.portfolioContract = null;
         this.portfolioContractABI = null;
         this.portfolioContractAddress = "0x17F24D3b8Bc1150553b54Da30B4d993AcB889212";
-        this.portfolioAbiLocation = "portfolio.json";
+        this.portfolioAbiLocation = "/data/portfolio.json";
         this.signer = null;
         this.stockNameToAddress = null;
+        this.stockAddressToName = null;
 
         this.stockContractABI = null;
-        this.stockContracAbiLocation = "stock.json";
+        this.stockContracAbiLocation = "/data/stock.json";
 
         this.yodaContractAddress = "0x6BdBb69660E6849b98e8C524d266a0005D3655F7";
         this.yodaContractABI = null;
-        this.yodaContractAbiLocation = "YODA.json";
+        this.yodaContractAbiLocation = "/data/YODA.json";
 
         // user-related data
         this.userAddress = null;
@@ -38,9 +39,18 @@ class WalletManager {
         // Load user data from cookies
         this.loadUserData();
         // load the stockNameToAddress mapping
-        loadJson("stockNameToAddress.json").then(data => {
+        loadJson("/data/stockNameToAddress.json").then(data => {
             this.stockNameToAddress = data;
             console.log("Stock addresses loaded successfully:", this.stockNameToAddress);
+
+            // generate reverse mapping: address -> name
+            this.stockAddressToName = Object.entries(this.stockNameToAddress)
+            .reduce((acc, [name, address]) => {
+                    acc[address] = name;
+                    return acc;
+                }, {});
+            console.log("Stock address to name mapping:", this.stockAddressToName);
+
         }).catch(error => {
             console.error("Error loading stock addresses:", error);
         });

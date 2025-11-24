@@ -4,20 +4,27 @@ from pymongo import AsyncMongoClient
 from pymongo.errors import DuplicateKeyError, PyMongoError
 import datamodels
 from datamodels import CreateUserBody, UpdateUserBody, PortfolioItemsBody, ResponseModel, StockTradeModel, StockListModel
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 
 app = FastAPI()
 
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "").split(",") #["http://localhost:3000", "http://...]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:8080", "http://localhost:8080"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-MONGO_URI = "mongodb://localhost:27017"
+MONGO_URI = os.getenv("MONGO_URI") # e.g., "mongodb://localhost:27017"
+DB_NAME = os.getenv("MONGO_DB_NAME", "blockfolio")
+
 client = AsyncMongoClient(MONGO_URI)
-db = client["blockfolio"]
+db = client[DB_NAME]
 users_collection = db["users"]
 transactions_collection = db["transactions"]
 listings_collection = db["listings"]
@@ -176,6 +183,69 @@ async def get_stock_list():
             query,
             {"_id": 0}
         ).sort("block_number", -1).to_list()
+
+        return ResponseModel(success=True, action="fetched", data={"transactions": transactions})
+    except PyMongoError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/transactionHistory", response_model=ResponseModel, status_code=200)
+async def get_transaction_history(wallet_address: str):
+    wallet = norm_wallet(wallet_address)
+
+    try:
+        soldtransactions = await transactions_collection.find(
+            {"seller_address": wallet},
+            {"_id": 0}
+        ).sort("block_number", -1).to_list()
+
+        buytransactions = await transactions_collection.find(
+            {"buyer_address": wallet},
+            {"_id": 0}
+        ).sort("block_number", -1).to_list()
+
+        stockListingTransactions = await listings_collection.find(
+            {"seller_address": wallet},
+            {"_id": 0}
+        ).sort("block_number", -1).to_list()
+        transactions = []
+        for tx in buytransactions:
+            transactions.append(
+                {
+                    "stockFtAddr": tx["stock_token_address"],
+                    "type": "bought",
+                    "count": tx["count"],
+                    "unit_price":  tx["unit_price"],
+                    "total_price": tx["total_price"],
+                    "tx_hash": tx["tx_hash"],
+                    "block_number": tx["block_number"]
+                }
+            )
+        for tx in soldtransactions:
+            transactions.append(
+                {
+                    "stockFtAddr": tx["stock_token_address"],
+                    "type": "sold",
+                    "count": tx["count"],
+                    "unit_price":  tx["unit_price"],
+                    "total_price": tx["total_price"],
+                    "tx_hash": tx["tx_hash"],
+                    "block_number": tx["block_number"]
+                }
+            )
+        for tx in stockListingTransactions:
+            transactions.append(
+                {
+                    "stockFtAddr": tx["stock_token_address"],
+                    "type": "listed",
+                    "count": tx["count"],
+                    "unit_price":  None,
+                    "total_price": None,
+                    "tx_hash": tx["tx_hash"],
+                    "block_number": tx["block_number"]
+                }
+            )
+            
+        transactions.sort(key=lambda x: x["block_number"], reverse=True)
 
         return ResponseModel(success=True, action="fetched", data={"transactions": transactions})
     except PyMongoError as e:
