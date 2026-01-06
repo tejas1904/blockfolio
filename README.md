@@ -1,4 +1,9 @@
-# blockfolio
+# Blockfolio
+
+Manage, track, and trade your stock portfolio as NFTs.
+
+![Dashboard](metadata/dashboard.png)
+![History](metadatas/history.png)
 ## Prerequisites
 
 Ensure you have the following installed:
